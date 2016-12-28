@@ -39,11 +39,11 @@
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <EventSetter Event="MouseDoubleClick" Handler="OnPackageDoubleClick" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsPrerelease, Mode=OneTime}" Value="true">
+                        <DataTrigger Binding="{Binding Identity.Version.IsPrerelease, Mode=OneTime}" Value="true">
                             <Setter Property="Foreground" Value="Maroon" />
                         </DataTrigger>
 
-                        <DataTrigger Binding="{Binding IsUnlisted, Mode=OneTime}" Value="true">
+                        <DataTrigger Binding="{Binding ., Mode=OneTime, Converter={StaticResource PackageInfoIsUnlistedConverter}}" Value="true">
                             <Setter Property="FontStyle" Value="Italic" />
                         </DataTrigger>
                     </Style.Triggers>
@@ -61,7 +61,7 @@
                     <GridViewColumn Width="80">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Version}" TextAlignment="Center" />
+                                <TextBlock Text="{Binding Identity.Version}" TextAlignment="Center" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -75,14 +75,7 @@
                     <GridViewColumn Width="90">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding EffectiveDownloadCount, StringFormat=N0, ConverterCulture={x:Static g:CultureInfo.CurrentCulture}}" TextAlignment="Center" />
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Width="90">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding PackageSize, Converter={StaticResource FileSizeConverter}}" TextAlignment="Center" />
+                                <TextBlock Text="{Binding DownloadCount, StringFormat=N0, ConverterCulture={x:Static g:CultureInfo.CurrentCulture}}" TextAlignment="Center" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using NuGet;
-using NuGetPackageExplorer.Types;
 
 namespace PackageExplorerViewModel.Rules
 {
@@ -13,15 +12,15 @@ namespace PackageExplorerViewModel.Rules
 
         #region IPackageRule Members
 
-        public IEnumerable<PackageIssue> Validate(IPackage package, string packagePath)
+        public IEnumerable<PackageIssue> Validate(IPackage package)
         {
             if (package.Description.Length > DescriptionLengthThreshold && String.IsNullOrEmpty(package.Summary))
             {
                 yield return new PackageIssue(
-                    PackageIssueLevel.Warning,
                     "Consider providing Summary text",
                     "The Description text is long but the Summary text is empty. This means the Description text will be truncated in the 'Manage NuGet packages' dialog.",
-                    "Provide a brief summary of the package in the Summary field.");
+                    "Provide a brief summary of the package in the Summary field.",
+                    PackageIssueLevel.Warning);
             }
         }
 

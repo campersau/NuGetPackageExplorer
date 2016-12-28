@@ -3,7 +3,7 @@
 		<BitmapImage x:Key="errorIcon" UriSource="Images/error.png" />
 		<BitmapImage x:Key="warningIcon" UriSource="Images/warning.png" />
 
-		<DataTemplate x:Key="PackageIssueTemplate" DataType="types:PackageIssue">
+		<DataTemplate x:Key="PackageIssueTemplate" DataType="nuget:PackageIssue">
 			<Expander Margin="0,5,0,0">
 				<Expander.Header>
 					<DockPanel>

@@ -4,7 +4,6 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using NuGet;
-using NuGetPackageExplorer.Types;
 
 namespace PackageExplorerViewModel.Rules
 {
@@ -13,7 +12,7 @@ namespace PackageExplorerViewModel.Rules
     {
         #region IPackageRule Members
 
-        public IEnumerable<PackageIssue> Validate(IPackage package, string packagePath)
+        public IEnumerable<PackageIssue> Validate(IPackage package)
         {
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (IPackageFile file in package.GetFiles())
@@ -39,10 +38,10 @@ namespace PackageExplorerViewModel.Rules
         private static PackageIssue CreatePackageIssue(string target)
         {
             return new PackageIssue(
-                PackageIssueLevel.Warning,
                 "Invalid framework folder",
                 "The folder '" + target + "' under 'lib' is not recognized as a valid framework name.",
-                "Rename it to a valid framework name."
+                "Rename it to a valid framework name.",
+                PackageIssueLevel.Warning
                 );
         }
     }

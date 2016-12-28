@@ -7,7 +7,7 @@
     xmlns:self="clr-namespace:PackageExplorer" 
     xmlns:viewmodel="clr-namespace:PackageExplorerViewModel;assembly=PackageViewModel" 
     xmlns:resources="clr-namespace:PackageExplorer.Resources" 
-    xmlns:types="clr-namespace:NuGet;assembly=NuGetPackageExplorer.Types"
+    xmlns:nuget="clr-namespace:NuGet;assembly=NuGet.Core"
     Visibility="{Binding Converter={StaticResource NullToVisibilityConverter}, FallbackValue=Collapsed}" 
     Margin="5,7,5,7"
     mc:Ignorable="d" 
@@ -32,7 +32,7 @@
             <self:DependencySetConverter x:Key="DependencySetConverter" />
             <self:ReferenceSetConverter x:Key="ReferenceSetConverter" />
 
-            <DataTemplate DataType="{x:Type types:PackageDependency}">
+            <DataTemplate DataType="{x:Type nuget:PackageDependency}">
                 <TextBlock ToolTip="Open this package from online feed.">
                     <Hyperlink Command="Print" CommandParameter="{Binding Id, Mode=OneWay}">
                         <Run Text="{Binding Mode=OneWay}"></Run>
@@ -40,7 +40,7 @@
                 </TextBlock>
             </DataTemplate>
 
-            <DataTemplate DataType="{x:Type types:PackageDependencySet}">
+            <DataTemplate DataType="{x:Type nuget:PackageDependencySet}">
                 <Grid Margin="0,0,0,8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -68,7 +68,7 @@
                 <TextBlock Text="{Binding Mode=OneWay}" TextTrimming="CharacterEllipsis" />
             </DataTemplate>
 
-            <DataTemplate DataType="{x:Type types:PackageReferenceSet}">
+            <DataTemplate DataType="{x:Type nuget:PackageReferenceSet}">
                 <Grid Margin="0,0,0,8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -244,12 +244,6 @@
                         <TextBlock Text="Copyright:" Margin="0,3,0,0" Style="{StaticResource DetailMetadataLabelStyle}" Visibility="{Binding Copyright, Converter={StaticResource NullToVisibilityConverter}}"></TextBlock>
 
                         <TextBlock Style="{StaticResource DetailDescriptionTextBoxStyle}" Text="{Binding Copyright, Converter={StaticResource NormalizeTextConverter}}" Visibility="{Binding Copyright, Converter={StaticResource NullToVisibilityConverter}}"></TextBlock>
-
-                        <!-- Serviceable -->
-                        <StackPanel Style="{StaticResource DetailMetadataStyle}" Visibility="{Binding Serviceable, Converter={StaticResource boolToVis}}">
-                            <TextBlock Text="{x:Static resources:Resources.Dialog_ServiceableLabel}" Style="{StaticResource DetailMetadataLabelStyle}" />
-                            <TextBlock Text="{Binding Serviceable, Converter={StaticResource BooleanConverter}}" Style="{StaticResource DetailMetadataValueStyle}" />
-                        </StackPanel>
 
                         <!-- Summary -->
                         <TextBlock Text="Summary:" Margin="0,3,0,0" Style="{StaticResource DetailMetadataLabelStyle}" Visibility="{Binding Summary, Converter={StaticResource NullToVisibilityConverter}}"></TextBlock>

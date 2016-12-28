@@ -22,11 +22,6 @@ namespace PackageExplorerViewModel
             _packageViewModel = packageViewModel;
         }
 
-        public string OriginalPath
-        {
-            get { return _filePath; }
-        }
-
         public string Name
         {
             get { return _name; }

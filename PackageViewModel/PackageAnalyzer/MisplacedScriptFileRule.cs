@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using NuGet;
-using NuGetPackageExplorer.Types;
 
 namespace PackageExplorerViewModel.Rules
 {
@@ -15,7 +14,7 @@ namespace PackageExplorerViewModel.Rules
 
         #region IPackageRule Members
 
-        public IEnumerable<PackageIssue> Validate(IPackage package, string packagePath)
+        public IEnumerable<PackageIssue> Validate(IPackage package)
         {
             foreach (IPackageFile file in package.GetFiles())
             {
@@ -49,21 +48,23 @@ namespace PackageExplorerViewModel.Rules
         private static PackageIssue CreatePackageIssueForMisplacedScript(string path)
         {
             return new PackageIssue(
-                PackageIssueLevel.Warning,
                 "PowerScript file outside tools folder",
                 "The script file '" + path +
                 "' is outside the 'tools' folder and hence will not be executed during installation of this package.",
-                "Move it into the 'tools' folder.");
+                "Move it into the 'tools' folder.",
+                PackageIssueLevel.Warning
+                );
         }
 
         private static PackageIssue CreatePackageIssueForUnrecognizedScripts(string path)
         {
             return new PackageIssue(
-                PackageIssueLevel.Warning,
                 "Unrecognized PowerScript file",
                 "The script file '" + path +
                 "' is not recognized by NuGet and hence will not be executed during installation of this package.",
-                "Rename it to install.ps1, uninstall.ps1 or init.ps1 and place it directly under 'tools'.");
+                "Rename it to install.ps1, uninstall.ps1 or init.ps1 and place it directly under 'tools'.",
+                PackageIssueLevel.Warning
+                );
         }
     }
 }

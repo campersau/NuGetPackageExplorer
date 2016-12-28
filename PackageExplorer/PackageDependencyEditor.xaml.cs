@@ -85,11 +85,11 @@ namespace PackageExplorer
 
         private void SelectDependencyButtonClicked(object sender, RoutedEventArgs e)
         {
-            PackageInfo selectedPackage = PackageChooser.SelectPackage(null);
+            var selectedPackage = PackageChooser.SelectPackage(null);
             if (selectedPackage != null)
             {
-                _newPackageDependency.Id = selectedPackage.Id;
-                _newPackageDependency.VersionSpec = VersionUtility.ParseVersionSpec(selectedPackage.Version);
+                _newPackageDependency.Id = selectedPackage.Identity.Id;
+                _newPackageDependency.VersionSpec = VersionUtility.ParseVersionSpec(selectedPackage.Identity.Version.ToString());
             }
         }
 

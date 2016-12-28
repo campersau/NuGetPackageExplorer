@@ -2,7 +2,6 @@
 using System.ComponentModel.Composition;
 using System.Linq;
 using NuGet;
-using NuGetPackageExplorer.Types;
 
 namespace PackageExplorerViewModel.Rules
 {
@@ -11,15 +10,15 @@ namespace PackageExplorerViewModel.Rules
     {
         #region IPackageRule Members
 
-        public IEnumerable<PackageIssue> Validate(IPackage package, string packagePath)
+        public IEnumerable<PackageIssue> Validate(IPackage package)
         {
             if (!HasContentOrDependency(package))
             {
                 yield return new PackageIssue(
-                    PackageIssueLevel.Error,
                     "Package has no content or dependency.",
                     "The package does not contain any files or dependencies or framework assembly references to be a valid package.",
-                    "Add files or package dependencies or framework assembly references."
+                    "Add files or package dependencies or framework assembly references.",
+                    PackageIssueLevel.Error
                     );
             }
         }

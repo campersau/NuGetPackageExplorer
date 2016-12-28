@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Windows.Input;
 using NuGet;
-using NuGetPackageExplorer.Types;
+using System.Runtime.CompilerServices;
 
 namespace PackageExplorerViewModel
 {
@@ -89,7 +89,7 @@ namespace PackageExplorerViewModel
                 if (_extension != value)
                 {
                     _extension = value;
-                    OnPropertyChanged("Extension");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -102,7 +102,7 @@ namespace PackageExplorerViewModel
                 if (_path != value)
                 {
                     _path = value;
-                    OnPropertyChanged("Path");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -115,7 +115,7 @@ namespace PackageExplorerViewModel
                 if (_isSelected != value)
                 {
                     _isSelected = value;
-                    OnPropertyChanged("IsSelected");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -257,7 +257,7 @@ namespace PackageExplorerViewModel
             Justification = "This method is potentially expensive.")]
         public abstract IEnumerable<IPackageFile> GetFiles();
 
-        protected void OnPropertyChanged(string propertyName)
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             if (PropertyChanged != null)
             {

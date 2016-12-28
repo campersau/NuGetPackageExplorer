@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NuGetPackageExplorer.Types;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Windows.Data;
@@ -13,12 +14,24 @@ namespace PackageExplorer
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var path = (string) value;
+            var item = value as MruItem;
+            if (item == null)
+            {
+                return null;
+            }
+
+            var path = item.Path;
             if (path == null)
             {
                 return null;
             }
-            else if (path.Length <= MaxLength)
+
+            if (item.PackageType == PackageType.DataServicePackage)
+            {
+                path += item.Id + item.Version.ToString();
+            }
+
+            if (path.Length <= MaxLength)
             {
                 return path;
             }

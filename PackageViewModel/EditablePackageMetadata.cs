@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using NuGet;
+using System.Runtime.CompilerServices;
 
 namespace PackageExplorerViewModel
 {
@@ -23,7 +24,6 @@ namespace PackageExplorerViewModel
         private bool _requireLicenseAcceptance;
         private string _summary;
         private string _tags;
-        private bool _serviceable;
         private string _title;
         private SemanticVersion _version;
         private ICollection<PackageDependencySet> _dependencySets;
@@ -55,7 +55,7 @@ namespace PackageExplorerViewModel
                 if (_authors != value)
                 {
                     _authors = value;
-                    RaisePropertyChange("Authors");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -68,7 +68,7 @@ namespace PackageExplorerViewModel
                 if (_owners != value)
                 {
                     _owners = value;
-                    RaisePropertyChange("Owners");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -85,7 +85,7 @@ namespace PackageExplorerViewModel
                 if (_packageAssemblyReferences != value)
                 {
                     _packageAssemblyReferences = value;
-                    RaisePropertyChange("PackageAssemblyReferences");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -102,7 +102,7 @@ namespace PackageExplorerViewModel
                 if (_dependencySets != value)
                 {
                     _dependencySets = value;
-                    RaisePropertyChange("DependencySets");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -156,7 +156,7 @@ namespace PackageExplorerViewModel
                 if (_id != value)
                 {
                     _id = value;
-                    RaisePropertyChange("Id");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -177,7 +177,7 @@ namespace PackageExplorerViewModel
                 if (_version != value)
                 {
                     _version = value;
-                    RaisePropertyChange("Version");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -190,7 +190,7 @@ namespace PackageExplorerViewModel
                 if (_title != value)
                 {
                     _title = value;
-                    RaisePropertyChange("Title");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -203,7 +203,7 @@ namespace PackageExplorerViewModel
                 if (_iconUrl != value)
                 {
                     _iconUrl = value;
-                    RaisePropertyChange("IconUrl");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -216,7 +216,7 @@ namespace PackageExplorerViewModel
                 if (_licenseUrl != value)
                 {
                     _licenseUrl = value;
-                    RaisePropertyChange("LicenseUrl");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -229,7 +229,7 @@ namespace PackageExplorerViewModel
                 if (_projectUrl != value)
                 {
                     _projectUrl = value;
-                    RaisePropertyChange("ProjectUrl");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -242,7 +242,7 @@ namespace PackageExplorerViewModel
                 if (value != _requireLicenseAcceptance)
                 {
                     _requireLicenseAcceptance = value;
-                    RaisePropertyChange("RequireLicenseAcceptance");
+                    RaisePropertyChange();
                     RaisePropertyChange("LicenseUrl");
                 }
             }
@@ -256,7 +256,7 @@ namespace PackageExplorerViewModel
                 if (value != _developmentDependency)
                 {
                     _developmentDependency = value;
-                    RaisePropertyChange("DevelopmentDependency");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -278,7 +278,7 @@ namespace PackageExplorerViewModel
                 if (_description != value)
                 {
                     _description = value;
-                    RaisePropertyChange("Description");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -291,7 +291,7 @@ namespace PackageExplorerViewModel
                 if (_summary != value)
                 {
                     _summary = value;
-                    RaisePropertyChange("Summary");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -304,7 +304,7 @@ namespace PackageExplorerViewModel
                 if (_releaseNotes != value)
                 {
                     _releaseNotes = value;
-                    RaisePropertyChange("ReleaseNotes");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -317,7 +317,7 @@ namespace PackageExplorerViewModel
                 if (_copyright != value)
                 {
                     _copyright = value;
-                    RaisePropertyChange("Copyright");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -330,7 +330,7 @@ namespace PackageExplorerViewModel
                 if (_language != value)
                 {
                     _language = value;
-                    RaisePropertyChange("Language");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -343,20 +343,7 @@ namespace PackageExplorerViewModel
                 if (_tags != value)
                 {
                     _tags = value;
-                    RaisePropertyChange("Tags");
-                }
-            }
-        }
-
-        public bool Serviceable
-        {
-            get { return _serviceable; }
-            set
-            {
-                if (value != _serviceable)
-                {
-                    _serviceable = value;
-                    RaisePropertyChange("Serviceable");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -369,7 +356,7 @@ namespace PackageExplorerViewModel
                 if (_minClientVersion != value)
                 {
                     _minClientVersion = value;
-                    RaisePropertyChange("MinClientVersion");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -394,11 +381,6 @@ namespace PackageExplorerViewModel
             get { return FrameworkAssemblies; }
         }
 
-        IEnumerable<PackageReferenceSet> IPackageMetadata.PackageAssemblyReferences
-        {
-            get { return PackageAssemblyReferences; }
-        }
-
         #endregion
 
         public void CopyFrom(IPackageMetadata source)
@@ -419,7 +401,6 @@ namespace PackageExplorerViewModel
             Copyright = source.Copyright;
             Language = source.Language;
             Tags = source.Tags;
-            Serviceable = source.Serviceable;
             DependencySets = new ObservableCollection<PackageDependencySet>(source.DependencySets);
             FrameworkAssemblies = new ObservableCollection<FrameworkAssemblyReference>(source.FrameworkAssemblies);
             PackageAssemblyReferences = new ObservableCollection<PackageReferenceSet>();
@@ -500,7 +481,7 @@ namespace PackageExplorerViewModel
             _propertyErrors.Clear();
         }
 
-        private void RaisePropertyChange(string propertyName)
+        private void RaisePropertyChange([CallerMemberName] string propertyName = null)
         {
             if (PropertyChanged != null)
             {

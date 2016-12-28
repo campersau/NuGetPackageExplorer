@@ -65,7 +65,6 @@ namespace PackageExplorerViewModel
             builder.LicenseUrl = source.LicenseUrl;
             builder.ProjectUrl = source.ProjectUrl;
             builder.RequireLicenseAcceptance = source.RequireLicenseAcceptance;
-            builder.Serviceable = source.Serviceable;
             builder.DevelopmentDependency = source.DevelopmentDependency;
             builder.Description = source.Description;
             builder.Summary = source.Summary;
@@ -88,7 +87,7 @@ namespace PackageExplorerViewModel
         }
 
         public static IEnumerable<PackageIssue> Validate
-            (this IPackage package, IEnumerable<IPackageRule> rules, string packageSource)
+            (this IPackage package, IEnumerable<IPackageRule> rules)
         {
             foreach (IPackageRule rule in rules)
             {
@@ -97,7 +96,7 @@ namespace PackageExplorerViewModel
                     PackageIssue[] issues = null;
                     try
                     {
-                        issues = rule.Validate(package, packageSource).ToArray();
+                        issues = rule.Validate(package).ToArray();
                     }
                     catch (Exception)
                     {

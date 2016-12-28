@@ -3,6 +3,8 @@ using System.ComponentModel.Composition;
 using NuGet;
 using NuGetPackageExplorer.Types;
 using PackageExplorerViewModel;
+using NuGet.Protocol.Core.Types;
+using NuGet.Packaging.Core;
 
 namespace PackageExplorer
 {
@@ -31,16 +33,18 @@ namespace PackageExplorer
 
         #region IPackageChooser Members
 
-        public PackageInfo SelectPackage(string searchTerm)
+        public SourceRepository Repository { get { return _viewModel.ActiveRepository; } }
+
+        public IPackageSearchMetadata SelectPackage(string searchTerm)
         {
             if (_dialog == null)
             {
                 _viewModel = ViewModelFactory.CreatePackageChooserViewModel(null);
                 _viewModel.PackageDownloadRequested += OnPackageDownloadRequested;
                 _dialog = new PackageChooserDialog(_viewModel)
-                          {
-                              Owner = Window.Value
-                          };
+                         {
+                             Owner = Window.Value
+                         };
             }
 
             _dialog.ShowDialog(searchTerm);
@@ -49,13 +53,14 @@ namespace PackageExplorer
 
         private async void OnPackageDownloadRequested(object sender, EventArgs e)
         {
-            PackageInfo packageInfo = _viewModel.SelectedPackage;
+            var repository = _viewModel.ActiveRepository;
+            var packageInfo = _viewModel.SelectedPackage;
             if (packageInfo != null)
             {
                 string selectedFilePath;
                 int selectedIndex;
 
-                string packageName = packageInfo.Id + "." + packageInfo.Version.ToString() + NuGet.Constants.PackageExtension;
+                string packageName = packageInfo.Identity.Id + "." + packageInfo.Identity.Version.ToString() + PackagingCoreConstants.NupkgExtension;
                 string title = "Save " + packageName;
                 const string filter = "NuGet package file (*.nupkg)|*.nupkg|All files (*.*)|*.*";
 
@@ -71,17 +76,21 @@ namespace PackageExplorer
                 if (accepted)
                 {
                     if (selectedIndex == 1 &&
-                        !selectedFilePath.EndsWith(NuGet.Constants.PackageExtension, StringComparison.OrdinalIgnoreCase))
+                        !selectedFilePath.EndsWith(PackagingCoreConstants.NupkgExtension, StringComparison.OrdinalIgnoreCase))
                     {
-                        selectedFilePath += NuGet.Constants.PackageExtension;
+                        selectedFilePath += PackagingCoreConstants.NupkgExtension;
                     }
 
-                    await PackageDownloader.Download(selectedFilePath, packageInfo.DownloadUrl, packageInfo.Id, packageInfo.Version);                    
+                    var downloadResource = await repository.GetResourceAsync<DownloadResource>();
+
+                    await PackageDownloader.Download(selectedFilePath, downloadResource, packageInfo.Identity);
                 }
             }
         }
 
-        public PackageInfo SelectPluginPackage()
+        public SourceRepository PluginRepository { get { return _pluginViewModel.ActiveRepository; } }
+
+        public IPackageSearchMetadata SelectPluginPackage()
         {
             if (_pluginDialog == null)
             {

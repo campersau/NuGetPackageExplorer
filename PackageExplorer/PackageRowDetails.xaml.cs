@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using NuGet;
 using PackageExplorerViewModel;
+using NuGet.Protocol.Core.Types;
 
 namespace PackageExplorer
 {
@@ -62,7 +63,7 @@ namespace PackageExplorer
             var viewModel = (PackageInfoViewModel)DataContext;
             if (viewModel != null)
             {
-                viewModel.SelectedPackage = (PackageInfo)PackageGrid.SelectedItem;
+                viewModel.SelectedPackage = (IPackageSearchMetadata)PackageGrid.SelectedItem;
             }
         }
 

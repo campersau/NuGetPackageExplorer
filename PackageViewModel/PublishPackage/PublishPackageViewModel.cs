@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using NuGet;
 using NuGetPackageExplorer.Types;
+using NuGet.Protocol.Core.Types;
 
 namespace PackageExplorerViewModel
 {
@@ -21,12 +18,11 @@ namespace PackageExplorerViewModel
         private bool _hasError;
         private string _publishKey;
         private bool? _publishAsUnlisted = true;
-        private bool? _appendV2ApiToUrl = true;
         private string _selectedPublishItem;
         private bool _showProgress;
         private string _status;
         private bool _suppressReadingApiKey;
-        private GalleryServer _uploadHelper;
+        private SourceRepository _repository;
 
         public PublishPackageViewModel(
             MruPackageSourceManager mruSourceManager,
@@ -49,7 +45,7 @@ namespace PackageExplorerViewModel
                 if (_publishKey != value)
                 {
                     _publishKey = value;
-                    OnPropertyChanged("PublishKey");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -63,7 +59,7 @@ namespace PackageExplorerViewModel
                 if (_mruSourceManager.ActivePackageSource != value)
                 {
                     _mruSourceManager.ActivePackageSource = value;
-                    OnPropertyChanged("PublishUrl");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -76,7 +72,7 @@ namespace PackageExplorerViewModel
                 if (_selectedPublishItem != value)
                 {
                     _selectedPublishItem = value;
-                    OnPropertyChanged("SelectedPublishItem");
+                    OnPropertyChanged();
 
                     if (value != null)
                     {
@@ -110,24 +106,11 @@ namespace PackageExplorerViewModel
                 if (_publishAsUnlisted != value)
                 {
                     _publishAsUnlisted = value;
-                    OnPropertyChanged("PublishAsUnlisted");
+                    OnPropertyChanged();
                 }
             }
         }
 
-        public bool? AppendV2ApiToUrl
-        {
-            get { return _appendV2ApiToUrl; }
-            set
-            {
-                if (_appendV2ApiToUrl != value)
-                {
-                    _appendV2ApiToUrl = value;
-                    OnPropertyChanged("AppendV2ApiToUrl");
-                }
-            }
-        }
-        
         public string Id
         {
             get { return _package.Id; }
@@ -146,7 +129,7 @@ namespace PackageExplorerViewModel
                 if (_hasError != value)
                 {
                     _hasError = value;
-                    OnPropertyChanged("HasError");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -159,7 +142,7 @@ namespace PackageExplorerViewModel
                 if (_showProgress != value)
                 {
                     _showProgress = value;
-                    OnPropertyChanged("ShowProgress");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -172,21 +155,21 @@ namespace PackageExplorerViewModel
                 if (_canPublish != value)
                 {
                     _canPublish = value;
-                    OnPropertyChanged("CanPublish");
+                    OnPropertyChanged();
                 }
             }
         }
 
-        public GalleryServer GalleryServer
+        public SourceRepository Repository
         {
             get
             {
-                if (_uploadHelper == null ||
-                    !PublishUrl.Equals(_uploadHelper.Source, StringComparison.OrdinalIgnoreCase))
+                if (_repository == null ||
+                    !PublishUrl.Equals(_repository.PackageSource.Source, StringComparison.OrdinalIgnoreCase))
                 {
-                    _uploadHelper = new GalleryServer(PublishUrl, HttpUtility.CreateUserAgentString(Constants.UserAgentClient));
+                    _repository = PackageRepositoryFactory.CreateRepository(PublishUrl);
                 }
-                return _uploadHelper;
+                return _repository;
             }
         }
 
@@ -198,7 +181,7 @@ namespace PackageExplorerViewModel
                 if (_status != value)
                 {
                     _status = value;
-                    OnPropertyChanged("Status");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -237,7 +220,14 @@ namespace PackageExplorerViewModel
 
             try
             {
-                await GalleryServer.PushPackage(PublishKey, _packageFilePath, _package, PublishAsUnlisted ?? false, AppendV2ApiToUrl ?? false);
+                var updateResource = await Repository.GetResourceAsync<PackageUpdateResource>();
+
+                await updateResource.Push(_packageFilePath, null, 999, false, (s) => PublishKey, (s) => PublishKey, NuGet.Common.NullLogger.Instance);
+
+                if (PublishAsUnlisted == true)
+                {
+                    await updateResource.Delete(Id, Version, (s) => PublishKey, (s) => true, NuGet.Common.NullLogger.Instance);
+                }
 
                 OnCompleted();
             }

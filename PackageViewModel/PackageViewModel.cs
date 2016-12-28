@@ -124,7 +124,7 @@ namespace PackageExplorerViewModel
                 if (_isInEditMode != value)
                 {
                     _isInEditMode = value;
-                    OnPropertyChanged("IsInEditMetadataMode");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -142,7 +142,7 @@ namespace PackageExplorerViewModel
                 if (_fileEditorViewModel != value)
                 {
                     _fileEditorViewModel = value;
-                    OnPropertyChanged("FileEditorViewModel");
+                    OnPropertyChanged();
                     OnPropertyChanged("IsInEditFileMode");
                 }
             }
@@ -161,7 +161,7 @@ namespace PackageExplorerViewModel
                 if (_packageMetadata != value)
                 {
                     _packageMetadata = value;
-                    OnPropertyChanged("PackageMetadata");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -174,7 +174,7 @@ namespace PackageExplorerViewModel
                 if (_showContentViewer != value)
                 {
                     _showContentViewer = value;
-                    OnPropertyChanged("ShowContentViewer");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -187,7 +187,7 @@ namespace PackageExplorerViewModel
                 if (_showPackageAnalysis != value)
                 {
                     _showPackageAnalysis = value;
-                    OnPropertyChanged("ShowPackageAnalysis");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -200,7 +200,7 @@ namespace PackageExplorerViewModel
                 if (_currentFileInfo != value)
                 {
                     _currentFileInfo = value;
-                    OnPropertyChanged("CurrentFileInfo");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -218,7 +218,7 @@ namespace PackageExplorerViewModel
                 if (_selectedItem != value)
                 {
                     _selectedItem = value;
-                    OnPropertyChanged("SelectedItem");
+                    OnPropertyChanged();
                     ((ViewContentCommand) ViewContentCommand).RaiseCanExecuteChanged();
                     CommandManager.InvalidateRequerySuggested();
                 }
@@ -233,7 +233,7 @@ namespace PackageExplorerViewModel
                 if (_packageSource != value)
                 {
                     _packageSource = value;
-                    OnPropertyChanged("PackageSource");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -246,7 +246,7 @@ namespace PackageExplorerViewModel
                 if (_hasEdit != value)
                 {
                     _hasEdit = value;
-                    OnPropertyChanged("HasEdit");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -314,7 +314,7 @@ namespace PackageExplorerViewModel
             {
                 foreach (string file in selectedFiles)
                 {
-                    folder.AddFile(file, isTempFile: false);
+                    folder.AddFile(file);
                 }
             }
         }
@@ -761,7 +761,7 @@ namespace PackageExplorerViewModel
                 try
                 {
                     Export(rootPath);
-                    UIServices.Show(Resources.ExportPackageSuccess, MessageLevel.Information);
+                    UIServices.Show(Resources.ExportPackageSuccess, MessageLevel.Info);
                 }
                 catch (Exception ex)
                 {
@@ -797,7 +797,7 @@ namespace PackageExplorerViewModel
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes"),
          SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters",
              MessageId =
-                 "NuGetPackageExplorer.Types.IUIServices.Show(System.String,NuGetPackageExplorer.Types.MessageLevel)")]
+                 "NuGetPackageExplorer.Types.IUIServices.Show(System.String,NuGet.MessageLevel)")]
         private void PackageCommandExecute(LazyPackageCommand packageCommand)
         {
             IPackage package = PackageHelper.BuildPackage(PackageMetadata, GetFiles());
@@ -981,7 +981,7 @@ namespace PackageExplorerViewModel
             if (result)
             {
                 string sourcePath = FileHelper.CreateTempFile(newName);
-                PackageFile file = folder.AddFile(sourcePath, isTempFile: true);
+                PackageFile file = folder.AddFile(sourcePath);
                 // file can be null if it collides with other files in the same directory
                 if (file != null)
                 {
@@ -1017,7 +1017,7 @@ namespace PackageExplorerViewModel
             var selectedFolder = SelectedItem as PackageFolder;
             if (selectedFolder != null)
             {
-                PackageFile file = selectedFolder.AddFile(sourcePath, isTempFile: true);
+                PackageFile file = selectedFolder.AddFile(sourcePath);
                 // file can be null if it collides with other files in the same directory
                 if (file != null)
                 {
@@ -1075,7 +1075,7 @@ namespace PackageExplorerViewModel
             var selectedFolder = SelectedItem as PackageFolder;
             if (selectedFolder != null)
             {
-                PackageFile file = selectedFolder.AddFile(sourcePath, isTempFile: true);
+                PackageFile file = selectedFolder.AddFile(sourcePath);
                 // file can be null if it collides with other files in the same directory
                 if (file != null)
                 {
@@ -1153,8 +1153,7 @@ namespace PackageExplorerViewModel
         public IEnumerable<PackageIssue> Validate()
         {
             IPackage package = PackageHelper.BuildPackage(PackageMetadata, GetFiles());
-            string packageFileName = Path.IsPathRooted(PackageSource) ? Path.GetFileName(PackageSource) : null;
-            return package.Validate(_packageRules.Select(r => r.Value), packageFileName);
+            return package.Validate(_packageRules.Select(r => r.Value));
         }
 
         private void Export(string rootPath)
@@ -1173,7 +1172,7 @@ namespace PackageExplorerViewModel
             RootFolder.Export(rootPath);
 
             // export .nuspec file
-            ExportManifest(Path.Combine(rootPath, PackageMetadata + ".nuspec"));
+            ExportManifest(Path.Combine(rootPath, PackageMetadata + NuGet.Packaging.PackagingConstants.ManifestExtension));
         }
 
         internal void ExportManifest(string fullpath, bool askForConfirmation = true, bool includeFilesSection = true)
@@ -1202,7 +1201,7 @@ namespace PackageExplorerViewModel
                     manifest.Files.AddRange(RootFolder.GetFiles().Select(
                         f => new ManifestFile
                         {
-                            Source = String.IsNullOrEmpty(f.OriginalPath) || f.OriginalPath.StartsWith(tempPath, StringComparison.OrdinalIgnoreCase) ? f.Path : PathUtility.RelativePathTo(rootPath, f.OriginalPath),
+                            Source = String.IsNullOrEmpty(f.EffectivePath) || f.EffectivePath.StartsWith(tempPath, StringComparison.OrdinalIgnoreCase) ? f.Path : PathUtility.RelativePathTo(rootPath, f.EffectivePath),
                             Target = f.Path
                         })
                     );
@@ -1294,7 +1293,7 @@ namespace PackageExplorerViewModel
                             targetFolder = RootFolder;
                         }
 
-                        targetFolder.AddFile(file, isTempFile: false);
+                        targetFolder.AddFile(file);
                     }
                     else if (Directory.Exists(file))
                     {
@@ -1308,7 +1307,7 @@ namespace PackageExplorerViewModel
                 {
                     if (File.Exists(file))
                     {
-                        folder.AddFile(file, isTempFile: false);
+                        folder.AddFile(file);
                     }
                     else if (Directory.Exists(file))
                     {
@@ -1340,7 +1339,7 @@ namespace PackageExplorerViewModel
             {
                 try
                 {
-                    Manifest manifest = Manifest.ReadFrom(metadataFileStream);
+                    Manifest manifest = Manifest.ReadFrom(metadataFileStream, true);
                     var newMetadata = new EditablePackageMetadata(manifest.Metadata);
                     PackageMetadata = newMetadata;
 

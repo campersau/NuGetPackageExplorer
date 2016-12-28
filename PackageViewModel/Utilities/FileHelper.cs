@@ -126,7 +126,7 @@ namespace PackageExplorerViewModel
         {
             if (String.IsNullOrEmpty(fileName))
             {
-                throw new ArgumentException("Argument is null or empty", "fileName");
+                throw new ArgumentNullException("fileName", "Argument is null or empty");
             }
 
             string filePath = Path.Combine(GetTempFilePath(), fileName);
@@ -138,7 +138,7 @@ namespace PackageExplorerViewModel
         {
             if (String.IsNullOrEmpty(fileName))
             {
-                throw new ArgumentException("Argument is null or empty", "fileName");
+                throw new ArgumentNullException("fileName", "Argument is null or empty");
             }
 
             string filePath = Path.Combine(GetTempFilePath(), fileName);

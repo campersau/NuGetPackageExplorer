@@ -104,13 +104,11 @@ namespace PackageExplorer
                 return null;
             }
 
-            string displayString = NewSupportedFramework.Text.Trim();
-
             if (!NewFrameworkAssembly.UpdateSources())
             {
                 return false;
             }
-            _frameworkAssemblies.Add(_newFrameworkAssembly.AsReadOnly(displayString));
+            _frameworkAssemblies.Add(_newFrameworkAssembly.AsReadOnly());
 
             // after framework assembly is added, clear the textbox
             ClearFrameworkAssemblyTextBox();
@@ -172,7 +170,7 @@ namespace PackageExplorer
                 var viewModel = (PackageViewModel) DataContext;
                 viewModel.PackageMetadata.DependencySets = _dependencySets;
                 viewModel.PackageMetadata.PackageAssemblyReferences = _referenceSets;
-                _frameworkAssemblies.CopyTo(viewModel.PackageMetadata.FrameworkAssemblies);
+                viewModel.PackageMetadata.FrameworkAssemblies.AddRange(_frameworkAssemblies);
             }
 
             return valid;

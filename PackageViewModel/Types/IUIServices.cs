@@ -1,16 +1,10 @@
-﻿using System;
+﻿using NuGet;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows.Threading;
 
 namespace NuGetPackageExplorer.Types
 {
-    public enum MessageLevel
-    {
-        Information,
-        Warning,
-        Error
-    }
-
     public interface IUIServices
     {
         bool OpenSaveFileDialog(string title, string defaultFileName, string initialDirectory, string filter, bool overwritePrompt,

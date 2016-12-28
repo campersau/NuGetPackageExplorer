@@ -104,14 +104,48 @@
     <ManifestKeyFile>PackageExplorer_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GrayscaleEffect, Version=1.0.0.0, Culture=neutral, PublicKeyToken=7f238d79773caa06, processorArchitecture=MSIL">
-      <HintPath>..\lib\GrayscaleEffect.dll</HintPath>
+    <Reference Include="GrayscaleEffect, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\GrayscaleEffect.1.0.1\lib\GrayscaleEffect.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="Humanizer">
-      <HintPath>..\lib\Humanizer.dll</HintPath>
+    <Reference Include="Humanizer, Version=2.1.0.0, Culture=neutral, PublicKeyToken=979442b78dfc278e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Humanizer.Core.2.1.0\lib\netstandard1.0\Humanizer.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="ICSharpCode.AvalonEdit">
-      <HintPath>..\lib\ICSharpCode.AvalonEdit.dll</HintPath>
+    <Reference Include="ICSharpCode.AvalonEdit, Version=4.3.0.9390, Culture=neutral, PublicKeyToken=9cc39be672370310, processorArchitecture=MSIL">
+      <HintPath>..\packages\AvalonEdit.4.3.0.9390\lib\Net40\ICSharpCode.AvalonEdit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Web.XmlTransform, Version=2.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.Xdt.2.1.1\lib\net40\Microsoft.Web.XmlTransform.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Common, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Common.3.5.0\lib\net45\NuGet.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Configuration, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Configuration.3.5.0\lib\net45\NuGet.Configuration.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Core, Version=2.14.0.832, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Core.2.14.0\lib\net40-Client\NuGet.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Frameworks, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Frameworks.3.5.0\lib\net45\NuGet.Frameworks.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Packaging, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Packaging.3.5.0\lib\net45\NuGet.Packaging.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Packaging.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Packaging.Core.3.5.0\lib\net45\NuGet.Packaging.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Packaging.Core.Types, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Packaging.Core.Types.3.5.0\lib\net45\NuGet.Packaging.Core.Types.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Protocol.Core.Types, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Protocol.Core.Types.3.5.0\lib\net45\NuGet.Protocol.Core.Types.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Versioning, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\NuGet.Versioning.3.5.0\lib\net45\NuGet.Versioning.dll</HintPath>
     </Reference>
     <Reference Include="Ookii.Dialogs.Wpf, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0c15020868fd6249, processorArchitecture=MSIL">
       <HintPath>..\lib\Ookii.Dialogs.Wpf.dll</HintPath>
@@ -121,10 +155,14 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Deployment" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -146,6 +184,7 @@
     <Compile Include="Converters\BooleanToStringConverter.cs" />
     <Compile Include="Converters\DateTimeOffsetHumanizeConverter.cs" />
     <Compile Include="Converters\DateTimeOffsetLongDateConverter.cs" />
+    <Compile Include="Converters\PackageInfoIsUnlistedConverter.cs" />
     <Compile Include="Converters\ReferenceSetConverter.cs" />
     <Compile Include="Converters\DependencySetConverter.cs" />
     <Compile Include="Converters\IntegerToBooleanConverter.cs" />
@@ -155,7 +194,6 @@
     <Compile Include="Converters\StringShortenerConverter.cs" />
     <Compile Include="Converters\TargetFrameworkConverter.cs" />
     <Compile Include="MefServices\RtfFileViewer.cs" />
-    <Compile Include="PackageDownloadRequestedEventArgs.cs" />
     <Compile Include="PackageReferencesEditor.xaml.cs">
       <DependentUpon>PackageReferencesEditor.xaml</DependentUpon>
     </Compile>
@@ -400,6 +438,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="packages.config" />
     <None Include="Properties\app.manifest">
       <SubType>Designer</SubType>
     </None>
@@ -452,16 +491,12 @@
       <Project>{0de0af9f-4d53-4900-8d15-f02c3542584f}</Project>
       <Name>CodeExecutor</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Core\Core.csproj">
-      <Project>{57B4C84E-427E-4041-A4E0-14A3C00E6BA5}</Project>
-      <Name>Core</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PackageViewModel\PackageViewModel.csproj">
       <Project>{A1E66420-E485-4719-A37F-5B49AAFB43AB}</Project>
       <Name>PackageViewModel</Name>
     </ProjectReference>
     <ProjectReference Include="..\Types\Types.csproj">
-      <Project>{E2EEEC5A-6A07-447E-9E95-C14307F57EDE}</Project>
+      <Project>{e2eeec5a-6a07-447e-9e95-c14307f57ede}</Project>
       <Name>Types</Name>
     </ProjectReference>
   </ItemGroup>

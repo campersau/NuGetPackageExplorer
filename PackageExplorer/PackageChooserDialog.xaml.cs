@@ -25,19 +25,10 @@ namespace PackageExplorer
             Debug.Assert(viewModel != null);
 
             _viewModel = viewModel;
-            _viewModel.LoadPackagesCompleted += OnLoadPackagesCompleted;
-            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.LoadPackagesCompleted += OnLoadPackagesCompleted;   
             _viewModel.OpenPackageRequested += OnOpenPackageRequested;
 
             DataContext = _viewModel;
-        }
-
-        private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == "SortDirection")
-            {
-                RedrawSortGlyph(_viewModel.SortColumn, _viewModel.SortDirection);
-            }
         }
 
         private void OnLoadPackagesCompleted(object sender, EventArgs e)
@@ -46,18 +37,6 @@ namespace PackageExplorer
             // away if they need to. Currently the default search behavior is not working most likely do to the
             // controls being disabled when the packages are loading.
             FocusSearchBox();
-        }
-
-        private void RedrawSortGlyph(string sortColumn, ListSortDirection sortDirection)
-        {
-            foreach (DataGridColumn column in ParentPackageGrid.Columns)
-            {
-                if (column.SortMemberPath.Equals(sortColumn, StringComparison.OrdinalIgnoreCase))
-                {
-                    column.SortDirection = sortDirection;
-                    break;
-                }
-            }
         }
 
         private void OnOpenPackageRequested(object sender, EventArgs e)
@@ -230,17 +209,7 @@ namespace PackageExplorer
                     InvokeSearch(_pendingSearch);
                 }
             }
-        }
-
-        private void PackageGrid_Sorting(object sender, DataGridSortingEventArgs e)
-        {
-            if (_viewModel.SortCommand.CanExecute(e.Column.SortMemberPath))
-            {
-                _viewModel.SortCommand.Execute(e.Column.SortMemberPath);
-            }
-
-            e.Handled = true;
-        }
+        }    
 
         private void OnPackageDoubleClick(object sender, RoutedEventArgs e)
         {

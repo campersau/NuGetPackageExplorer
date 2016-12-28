@@ -4,7 +4,6 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Globalization;
 using NuGet;
-using NuGetPackageExplorer.Types;
 
 namespace PackageExplorerViewModel.Rules
 {
@@ -13,7 +12,7 @@ namespace PackageExplorerViewModel.Rules
     {
         #region IPackageRule Members
 
-        public IEnumerable<PackageIssue> Validate(IPackage package, string packagePath)
+        public IEnumerable<PackageIssue> Validate(IPackage package)
         {
             if (IsPreReleasedVersion(package.Version))
             {
@@ -45,13 +44,13 @@ namespace PackageExplorerViewModel.Rules
         private static PackageIssue CreatePackageIssue(PackageDependency target)
         {
             return new PackageIssue(
-                PackageIssueLevel.Error,
                 "Invalid prerelease dependency",
                 String.Format(CultureInfo.CurrentCulture,
                               "A stable release of a package must not have a dependency on a prerelease package, '{0}'.",
                               target),
                 String.Format(CultureInfo.CurrentCulture,
-                              "Either modify the version spec of dependency '{0}' or update the version field.", target)
+                              "Either modify the version spec of dependency '{0}' or update the version field.", target)  ,
+                PackageIssueLevel.Error
                 );
         }
     }

@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using Microsoft.Win32;
 using NuGetPackageExplorer.Types;
 using Ookii.Dialogs.Wpf;
+using NuGet;
 
 namespace PackageExplorer
 {
@@ -127,12 +128,16 @@ namespace PackageExplorer
                     image = MessageBoxImage.Error;
                     break;
 
-                case MessageLevel.Information:
+                case MessageLevel.Info:
                     image = MessageBoxImage.Information;
                     break;
 
                 case MessageLevel.Warning:
                     image = MessageBoxImage.Warning;
+                    break;
+
+                case MessageLevel.Debug:
+                    image = MessageBoxImage.None;
                     break;
 
                 default:

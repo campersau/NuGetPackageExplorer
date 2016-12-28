@@ -5,7 +5,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     xmlns:self="clr-namespace:PackageExplorer" 
-    xmlns:types="clr-namespace:NuGet;assembly=NuGetPackageExplorer.Types" 
+    xmlns:nuget="clr-namespace:NuGet.Packaging;assembly=NuGet.Packaging" 
     IsVisibleChanged="PackageMetadataEditor_IsVisibleChanged" mc:Ignorable="d" d:DesignHeight="300" d:DesignWidth="300">
 
     <UserControl.Resources>
@@ -37,7 +37,7 @@
             <Setter Property="Margin" Value="0, 4, 3, 0" />
         </Style>
 
-        <DataTemplate DataType="{x:Type types:FrameworkAssemblyReference}" x:Key="FrameworkAssemblyTemplate">
+        <DataTemplate DataType="{x:Type nuget:FrameworkAssemblyReference}" x:Key="FrameworkAssemblyTemplate">
             <Grid Margin="0,4,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -173,9 +173,6 @@
             <!-- Tags -->
             <Label Grid.Row="16" Grid.Column="0" Target="TagsBox" Style="{StaticResource LabelStyle}" Content="Ta_gs" />
             <TextBox Grid.Row="16" Grid.Column="1" x:Name="TagsBox" Text="{Binding PackageMetadata.Tags}" />
-
-            <!-- Serviceable -->
-            <CheckBox Grid.Row="17" Grid.Column="0" Grid.ColumnSpan="2" VerticalContentAlignment="Center" IsChecked="{Binding PackageMetadata.Serviceable}" Content="_Serviceable" Style="{StaticResource CheckBoxStyle}" />
 
             <!-- Framework assemblies -->
             <Border Grid.Row="18" Grid.ColumnSpan="2" Margin="1,18,2,0" Padding="2,6,2,2" CornerRadius="3" BorderThickness="1" BorderBrush="#D5DFE5">

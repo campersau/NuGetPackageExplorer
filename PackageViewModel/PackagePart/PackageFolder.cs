@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -77,7 +76,7 @@ namespace PackageExplorerViewModel
                 if (_isExpanded != value)
                 {
                     _isExpanded = value;
-                    OnPropertyChanged("IsExpanded");
+                    OnPropertyChanged();
                 }
             }
         }
@@ -230,7 +229,7 @@ namespace PackageExplorerViewModel
                 return;
             }
 
-            if (this.IsDescendantOf(childFolder))
+            if (IsDescendantOf(childFolder))
             {
                 return;
             }
@@ -251,11 +250,11 @@ namespace PackageExplorerViewModel
             PackageViewModel.NotifyChanges();
         }
 
-        public PackageFile AddFile(string filePath, bool isTempFile)
+        public PackageFile AddFile(string filePath)
         {
             if (!File.Exists(filePath))
             {
-                throw new ArgumentException("File does not exist.", "filePath");
+                throw new ArgumentNullException("filePath", "File does not exist.");
             }
 
             string newFileName = System.IO.Path.GetFileName(filePath);
@@ -288,7 +287,7 @@ namespace PackageExplorerViewModel
             }
 
             string newTargetPath = this.Path + "\\" + newFileName;
-            var physicalFile = new PhysicalPackageFile(isTempFile, filePath, newTargetPath);
+            var physicalFile = new PhysicalPackageFile() { SourcePath = filePath, TargetPath = newTargetPath };
             var newFile = new PackageFile(physicalFile, newFileName, this);
 
             Children.Add(newFile);
@@ -327,7 +326,7 @@ namespace PackageExplorerViewModel
                 }
 
                 string newTargetPath = this.Path + "\\" + file.Name;
-                var physicalFile = new PhysicalPackageFile(isTempFile: true, originalPath: fileCopyPath, targetPath: newTargetPath);
+                var physicalFile = new PhysicalPackageFile() { SourcePath = fileCopyPath, TargetPath = newTargetPath };
 
                 newFile = new PackageFile(physicalFile, file.Name, this);
             }
@@ -366,7 +365,7 @@ namespace PackageExplorerViewModel
             // temporarily remove the old file in order to add a new file
             Children.Remove(oldFile);
 
-            PackageFile newFile = AddFile(newFilePath, isTempFile: false);
+            PackageFile newFile = AddFile(newFilePath);
             if (newFile != null)
             {
                 // new file added successfully, officially delete the old file by disposing it
@@ -409,7 +408,7 @@ namespace PackageExplorerViewModel
             PackageFolder childPackgeFolder = AddFolder(dirInfo.Name);
             foreach (FileInfo file in dirInfo.GetFiles("*.*", SearchOption.TopDirectoryOnly))
             {
-                childPackgeFolder.AddFile(file.FullName, isTempFile: false);
+                childPackgeFolder.AddFile(file.FullName);
             }
             foreach (DirectoryInfo subFolder in dirInfo.GetDirectories("*.*", SearchOption.TopDirectoryOnly))
             {

@@ -5,6 +5,7 @@ using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using NuGet;
 using NuGetPackageExplorer.Types;
+using NuGet.Protocol.Core.Types;
 
 namespace PackageExplorerViewModel
 {
@@ -108,13 +109,15 @@ namespace PackageExplorerViewModel
                 return;
             }
 
-            PackageInfo selectedPackageInfo = _packageChooser.SelectPluginPackage();
+            var selectedPackageInfo = _packageChooser.SelectPluginPackage();
             if (selectedPackageInfo != null)
             {
-                IPackage package = await _packageDownloader.Download(
-                    selectedPackageInfo.DownloadUrl,
-                    selectedPackageInfo.Id,
-                    selectedPackageInfo.Version);
+                var repository = _packageChooser.PluginRepository;
+                var downloadResource = await repository.GetResourceAsync<DownloadResource>();
+
+                var package = await _packageDownloader.Download(
+                    downloadResource,
+                    selectedPackageInfo.Identity);
 
                 if (package != null)
                 {

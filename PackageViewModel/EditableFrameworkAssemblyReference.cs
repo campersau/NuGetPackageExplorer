@@ -54,9 +54,9 @@ namespace PackageExplorerViewModel
             }
         }
 
-        public FrameworkAssemblyReference AsReadOnly(string displayValue)
+        public FrameworkAssemblyReference AsReadOnly()
         {
-            return new FrameworkAssemblyReference(AssemblyName, SupportedFrameworks, displayValue);
+            return new FrameworkAssemblyReference(AssemblyName, SupportedFrameworks);
         }
 
         public string Error

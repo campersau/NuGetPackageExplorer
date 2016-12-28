@@ -3,6 +3,7 @@ using System.Linq;
 using System.ComponentModel;
 using System.Diagnostics;
 using NuGet;
+using System.Runtime.CompilerServices;
 
 namespace PackageExplorerViewModel
 {
@@ -27,7 +28,7 @@ namespace PackageExplorerViewModel
                 if (_id != value)
                 {
                     _id = value;
-                    RaisePropertyChange("Id");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -40,7 +41,7 @@ namespace PackageExplorerViewModel
                 if (_versionSpec != value)
                 {
                     _versionSpec = value;
-                    RaisePropertyChange("VersionSpec");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -53,7 +54,7 @@ namespace PackageExplorerViewModel
                 if (_exclude != value)
                 {
                     _exclude = value;
-                    RaisePropertyChange("Exclude");
+                    RaisePropertyChange();
                 }
             }
         }
@@ -78,7 +79,7 @@ namespace PackageExplorerViewModel
 
         #endregion
 
-        private void RaisePropertyChange(string propertyName)
+        private void RaisePropertyChange([CallerMemberName] string propertyName = null)
         {
             if (PropertyChanged != null)
             {
@@ -115,7 +116,7 @@ namespace PackageExplorerViewModel
 
         public PackageDependency AsReadOnly()
         {
-            return new PackageDependency(Id, VersionSpec, Exclude);
+            return new PackageDependency(Id, VersionSpec, null, Exclude);
         }
     }
 }

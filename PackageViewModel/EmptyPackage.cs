@@ -2,12 +2,19 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Versioning;
 using NuGet;
 
 namespace PackageExplorerViewModel
 {
     public class EmptyPackage : IPackage
     {
+
+        public EmptyPackage()
+        {
+            PackageAssemblyReferences = new List<PackageReferenceSet>();
+        }
+
         #region IPackage Members
 
         public IEnumerable<IPackageAssemblyReference> AssemblyReferences
@@ -25,6 +32,16 @@ namespace PackageExplorerViewModel
             return null;
         }
 
+        public IEnumerable<FrameworkName> GetSupportedFrameworks()
+        {
+            yield break;
+        }
+
+        public void ExtractContents(IFileSystem fileSystem, string extractPath)
+        {
+
+        }
+
         public string Id
         {
             get { return "MyPackage"; }
@@ -37,7 +54,7 @@ namespace PackageExplorerViewModel
 
         public string Title
         {
-            get { return String.Empty; }
+            get { return string.Empty; }
         }
 
         public IEnumerable<string> Authors
@@ -105,11 +122,6 @@ namespace PackageExplorerViewModel
             get { return null; }
         }
 
-        public bool Serviceable
-        {
-            get { return false; }
-        }
-
         public IEnumerable<PackageDependencySet> DependencySets
         {
             get { return Enumerable.Empty<PackageDependencySet>(); }
@@ -125,19 +137,9 @@ namespace PackageExplorerViewModel
             get { return -1; }
         }
 
-        public int VersionDownloadCount
-        {
-            get { return -1; }
-        }
-
         public IEnumerable<FrameworkAssemblyReference> FrameworkAssemblies
         {
             get { return Enumerable.Empty<FrameworkAssemblyReference>(); }
-        }
-
-        public IEnumerable<PackageReferenceSet> PackageAssemblyReferences
-        {
-            get { return Enumerable.Empty<PackageReferenceSet>(); }
         }
 
         public bool IsAbsoluteLatestVersion
@@ -150,26 +152,6 @@ namespace PackageExplorerViewModel
             get { return false; }
         }
 
-        public bool IsPrerelease
-        {
-            get { return false; }
-        }
-
-        public DateTimeOffset LastUpdated
-        {
-            get { return DateTimeOffset.MinValue; }
-        }
-
-        public long PackageSize
-        {
-            get { return 0; }
-        }
-
-        public string PackageHash
-        {
-            get { return null; }
-        }
-
         public DateTimeOffset? Published
         {
             get { return DateTimeOffset.Now; }
@@ -177,11 +159,15 @@ namespace PackageExplorerViewModel
 
         public Version MinClientVersion
         {
-            get
-            {
-                return null;
-            }
+            get { return null; }
         }
+
+        public bool Listed
+        {
+            get { return false; }
+        }
+
+        public ICollection<PackageReferenceSet> PackageAssemblyReferences { get; private set; }
 
         #endregion
     }

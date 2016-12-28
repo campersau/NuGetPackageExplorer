@@ -25,7 +25,15 @@ namespace PackageExplorerViewModel
             _fileInEdit = fileInEdit;
 
             // Note: has to preserve the file name here so that the new file "appears" to be the same as old file
-            _filePath = fileInEdit.OriginalPath ?? Path.Combine(FileHelper.GetTempFilePath(), fileInEdit.Name);
+            var physicalPackageFile = fileInEdit as PhysicalPackageFile;
+            if (physicalPackageFile != null)
+            {
+                _filePath = physicalPackageFile.SourcePath;
+            }
+            if (_filePath == null)
+            {
+                _filePath = Path.Combine(FileHelper.GetTempFilePath(), fileInEdit.Name);
+            }
 
             _closeCommand = new RelayCommand<IFileEditorService>(CloseExecute);
             _saveCommand = new RelayCommand<IFileEditorService>(SaveExecute);
@@ -44,7 +52,7 @@ namespace PackageExplorerViewModel
                 if (_hasEdit != value)
                 {
                     _hasEdit = value;
-                    OnPropertyChanged("HasEdit");
+                    OnPropertyChanged();
                 }
             }
         }

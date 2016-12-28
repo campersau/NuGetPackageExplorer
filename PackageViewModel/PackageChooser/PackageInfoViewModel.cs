@@ -8,24 +8,25 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using NuGet;
+using NuGet.Protocol.Core.Types;
 
 namespace PackageExplorerViewModel
 {
     public class PackageInfoViewModel : ViewModelBase
     {
-        private readonly IPackageRepository _repository;
+        private readonly SourceRepository _repository;
         private bool _isLoading;
         private string _errorMessage;
         private bool _showingAllVersions;
-        private PackageInfo _selectedPackage;
+        private IPackageSearchMetadata _selectedPackage;
         private readonly PackageChooserViewModel _parentViewModel;
         private CancellationTokenSource _downloadCancelSource;
         private bool _hasFinishedLoading;
 
         public PackageInfoViewModel(
-            PackageInfo info, 
+            IPackageSearchMetadata info,
             bool showPrereleasePackages,
-            IPackageRepository repository,
+            SourceRepository repository,
             PackageChooserViewModel parentViewModel)
         {
             Debug.Assert(info != null);
@@ -35,7 +36,7 @@ namespace PackageExplorerViewModel
             ShowPrerelease = showPrereleasePackages;
             _repository = repository;
             _parentViewModel = parentViewModel;
-            AllPackages = new ObservableCollection<PackageInfo>();
+            AllPackages = new ObservableCollection<IPackageSearchMetadata>();
 
             ToggleAllVersionsCommand = new RelayCommand(OnToggleAllVersions, CanToggleAllVersions);
             OpenCommand = new RelayCommand(OnOpenPackage);
@@ -43,9 +44,9 @@ namespace PackageExplorerViewModel
             CancelCommand = new RelayCommand(OnCancelDownload, CanCancelDownload);
         }
 
-        public ObservableCollection<PackageInfo> AllPackages { get; private set; }
+        public ObservableCollection<IPackageSearchMetadata> AllPackages { get; private set; }
 
-        public PackageInfo SelectedPackage
+        public IPackageSearchMetadata SelectedPackage
         {
             get
             {
@@ -61,7 +62,7 @@ namespace PackageExplorerViewModel
             }
         }
 
-        public PackageInfo EffectiveSelectedPackage
+        public IPackageSearchMetadata EffectiveSelectedPackage
         {
             get
             {
@@ -69,7 +70,7 @@ namespace PackageExplorerViewModel
             }
         }
 
-        public PackageInfo LatestPackageInfo { get; private set; }
+        public IPackageSearchMetadata LatestPackageInfo { get; private set; }
 
         public bool ShowPrerelease { get; private set; }
 
@@ -104,7 +105,7 @@ namespace PackageExplorerViewModel
             }
         }
 
-        public bool HasFinishedLoading 
+        public bool HasFinishedLoading
         {
             get
             {
@@ -133,7 +134,7 @@ namespace PackageExplorerViewModel
                 {
                     _isLoading = value;
                     OnPropertyChanged();
-                    
+
                     // we don't need to raise this event because the Cancel button
                     // is only visible when IsLoading = true anyway.
                     //CancelCommand.RaiseCanExecuteChanged();
@@ -174,52 +175,13 @@ namespace PackageExplorerViewModel
 
             try
             {
-                IQueryable<IPackage> query = _repository.GetPackagesById(LatestPackageInfo.Id, ShowPrerelease);
-                query = query.OrderByDescending(p => p.Published);
+                var packageMetadataResource = await _repository.GetResourceAsync<PackageMetadataResource>();
 
-                IQueryable<PackageInfo> packageInfos = GetPackageInfos(query, _repository);
-
-                PackageInfo[] packageInfoList = null;
-                bool resourceNotFoundError = false;
-                try
-                {
-                    packageInfoList = await LoadData(packageInfos, _downloadCancelSource.Token);
-                }
-                catch (DataServiceQueryException ex)
-                {
-                    resourceNotFoundError = IsResourceNotFoundError(ex);
-                    if (!resourceNotFoundError) throw;
-                }
-
-                // for a 404 error, use the legacy way to find packages by id,
-                // which requires filtering pre-release packages after the fact
-                if (resourceNotFoundError)
-                {
-                    query = ((DataServicePackageRepository)_repository).LegacyGetPackagesById(LatestPackageInfo.Id);
-                    packageInfos = GetPackageInfos(query, _repository);
-                    packageInfoList = await LoadData(packageInfos, _downloadCancelSource.Token);
-                    if (!ShowPrerelease)
-                    {
-                        packageInfoList = Array.FindAll(packageInfoList, p => !p.IsPrerelease);
-                    }
-                }
-
-                var dataServiceRepository = _repository as DataServicePackageRepository;
-                if (dataServiceRepository != null)
-                {
-                    foreach (PackageInfo entity in packageInfoList)
-                    {
-                        entity.DownloadUrl = dataServiceRepository.GetReadStreamUri(entity);
-                    }
-                }
-
-                foreach (var p in packageInfoList)
-                {
-                    p.ShowAll = true;
-                }
+                var query = await packageMetadataResource.GetMetadataAsync(LatestPackageInfo.Identity.Id, ShowPrerelease, ShowPrerelease, NuGet.Common.NullLogger.Instance, _downloadCancelSource.Token);
+                query = query.OrderByDescending(p => p.Identity.Version);
 
                 // now show packages
-                AllPackages.AddRange(packageInfoList);
+                AllPackages.AddRange(query);
 
                 HasFinishedLoading = true;
             }
@@ -235,70 +197,7 @@ namespace PackageExplorerViewModel
                 _downloadCancelSource = null;
                 IsLoading = false;
             }
-        }
-
-        private static bool IsResourceNotFoundError(DataServiceQueryException ex)
-        {
-            return ex.InnerException is DataServiceClientException &&
-                ((DataServiceClientException)ex.InnerException).StatusCode == 404;
-        }
-
-        private static IQueryable<PackageInfo> GetPackageInfos(IQueryable<IPackage> query, IPackageRepository repository)
-        {
-            if (repository is DataServicePackageRepository)
-            {
-                return query.Cast<DataServicePackage>().Select(p => new PackageInfo
-                    {
-                        Id = p.Id,
-                        Version = p.Version,
-                        Authors = p.Authors,
-                        DownloadCount = p.DownloadCount,
-                        VersionDownloadCount = p.VersionDownloadCount,
-                        PackageHash = p.PackageHash,
-                        PackageSize = p.PackageSize,
-                        Published = p.Published
-                    });
-            }
-            else
-            {
-                return query.Cast<ZipPackage>().Select(p => new PackageInfo
-                    {
-                        Id = p.Id,
-                        Version = p.Version.ToString(),
-                        Authors = String.Join(", ", p.Authors),
-                        DownloadCount = p.DownloadCount,
-                        VersionDownloadCount = p.VersionDownloadCount,
-                        PackageHash = p.PackageHash,
-                        PackageSize = p.PackageSize,
-                        DownloadUrl = new Uri(p.Source),
-                        Published = p.Published,
-                    });
-            }
-        }
-
-        protected async Task<PackageInfo[]> LoadData(IQueryable<PackageInfo> query, CancellationToken token)
-        {
-            PackageInfo[] results;
-
-            var dataServiceQuery = query as DataServiceQuery<PackageInfo>;
-            if (dataServiceQuery != null)
-            {
-                IEnumerable<PackageInfo> queryResponse =
-                    await Task.Factory.FromAsync<IEnumerable<PackageInfo>>(dataServiceQuery.BeginExecute(null, null), dataServiceQuery.EndExecute);
-
-                token.ThrowIfCancellationRequested();
-                results = queryResponse.ToArray();
-            }
-            else
-            {
-                results = await Task.Run((Func<PackageInfo[]>)query.ToArray, token);
-            }
-
-            // sort by Version descending
-            Array.Sort(results, (a, b) => b.Version.CompareTo(a.Version));
-
-            return results;
-        }
+        }    
 
         private bool CanToggleAllVersions()
         {
@@ -344,8 +243,8 @@ namespace PackageExplorerViewModel
 
         private bool CanCancelDownload()
         {
-            return IsLoading && 
-                   _downloadCancelSource != null && 
+            return IsLoading &&
+                   _downloadCancelSource != null &&
                    !_downloadCancelSource.IsCancellationRequested;
         }
 
@@ -364,8 +263,8 @@ namespace PackageExplorerViewModel
             {
                 OnCancelDownload();
             }
-            
-            if (ShowingAllVersions) 
+
+            if (ShowingAllVersions)
             {
                 ShowingAllVersions = false;
             }

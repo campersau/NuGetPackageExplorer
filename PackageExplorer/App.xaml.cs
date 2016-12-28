@@ -10,7 +10,7 @@ using System.Windows;
 using CodeExecutor;
 using NuGet;
 using NuGetPackageExplorer.Types;
-using PackageExplorer.Properties;
+using Settings = PackageExplorer.Properties.Settings;
 using PackageExplorerViewModel;
 
 namespace PackageExplorer
@@ -47,9 +47,6 @@ namespace PackageExplorer
             var window = Container.GetExportedValue<MainWindow>();
             window.Show();
 
-            //Disable this sellup as it doesn't work well with Windows 10 and the Windows Store application is not maintained.
-            //CheckWindows8AndDisplayUpsellDialog();
-
             if (e.Args.Length > 0)
             {
                 string file = e.Args[0];
@@ -66,7 +63,7 @@ namespace PackageExplorer
                 ApplicationDeployment.CurrentDeployment.ActivationUri != null)
             {
                 string queryString = ApplicationDeployment.CurrentDeployment.ActivationUri.Query;
-                var arguments = HttpUtility.ParseQueryString(queryString);
+                var arguments = NuGetPackageExplorer.Types.HttpUtility.ParseQueryString(queryString);
 
                 string downloadUrl = arguments["url"];
                 Uri uri;
@@ -93,27 +90,6 @@ namespace PackageExplorer
                     string file = activationData[0];
                     await LoadFile(window, file);
                     return;
-                }
-            }
-        }
-
-        private void CheckWindows8AndDisplayUpsellDialog()
-        {
-            if (NativeMethods.IsWindows8OrLater && Settings.Default.SolicitInstallNpeForWin8)
-            {
-                bool isInstalled = RemoteCodeExecutor.IsNpeMetroInstalled;
-                if (!isInstalled)
-                {
-                    IUIServices uiServices = Container.GetExportedValue<IUIServices>();
-                    bool? result = uiServices.AskToInstallNpeOnWindows8();
-
-                    // if result == null, remind user next time
-                    Settings.Default.SolicitInstallNpeForWin8 = (result != false);
-
-                    if (result == true)
-                    {
-                        Process.Start("ms-windows-store:PDP?PFN=50582LuanNguyen.NuGetPackageExplorer_w6y2tyx5bpzwa");
-                    }
                 }
             }
         }

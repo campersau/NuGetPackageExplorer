@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Input;
 using NuGetPackageExplorer.Types;
+using NuGet;
 
 namespace PackageExplorerViewModel
 {

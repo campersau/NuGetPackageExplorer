@@ -2,19 +2,17 @@
 using System.ComponentModel.Composition;
 using System.Globalization;
 using System.IO;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using NuGet;
+using NuGet.Packaging.Core;
+using NuGet.Protocol.Core.Types;
 using NuGetPackageExplorer.Types;
 using Ookii.Dialogs.Wpf;
-using Constants = PackageExplorerViewModel.Constants;
 
 namespace PackageExplorer
 {
-    using HttpClient = System.Net.Http.HttpClient;
-
     [Export(typeof(IPackageDownloader))]
     internal class PackageDownloader : IPackageDownloader
     {
@@ -29,31 +27,31 @@ namespace PackageExplorer
 
         #region IPackageDownloader Members
 
-        public async Task Download(string targetFilePath, Uri downloadUri, string packageId, string packageVersion)
+        public async Task Download(string targetFilePath, DownloadResource downloadResource, PackageIdentity packageIdentity)
         {
-            string sourceFilePath = await DownloadWithProgress(downloadUri, packageId, packageVersion);
+            string sourceFilePath = await DownloadWithProgress(downloadResource, packageIdentity);
             if (!String.IsNullOrEmpty(sourceFilePath))
             {
                 File.Copy(sourceFilePath, targetFilePath, overwrite: true);
             }
         }
 
-        public async Task<IPackage> Download(Uri downloadUri, string packageId, string packageVersion)
+        public async Task<IPackage> Download(DownloadResource downloadResource, PackageIdentity packageIdentity)
         {
-            string tempFilePath = await DownloadWithProgress(downloadUri, packageId, packageVersion);
+            string tempFilePath = await DownloadWithProgress(downloadResource, packageIdentity);
             return (tempFilePath == null) ? null : new ZipPackage(tempFilePath);
         }
 
-        private async Task<string> DownloadWithProgress(Uri downloadUri, string packageId, string packageVersion)
+        private async Task<string> DownloadWithProgress(DownloadResource downloadResource, PackageIdentity packageIdentity)
         {
             string progressDialogText = Resources.Resources.Dialog_DownloadingPackage;
-            if (!String.IsNullOrEmpty(packageId))
+            if (packageIdentity.HasVersion)
             {
-                progressDialogText = String.Format(CultureInfo.CurrentCulture, progressDialogText, packageId, packageVersion);
+                progressDialogText = String.Format(CultureInfo.CurrentCulture, progressDialogText, packageIdentity.Id, packageIdentity.Version);
             }
             else
             {
-                progressDialogText = String.Format(CultureInfo.CurrentCulture, progressDialogText, downloadUri, String.Empty);
+                progressDialogText = String.Format(CultureInfo.CurrentCulture, progressDialogText, packageIdentity.Id, string.Empty);
             }
 
             _progressDialog = new ProgressDialog
@@ -84,8 +82,28 @@ namespace PackageExplorer
 
             try
             {
-                string tempFilePath = await DownloadData(downloadUri, OnReportProgress, cts.Token);
-                return tempFilePath;
+                downloadResource.Progress += OnReportProgress;
+
+                using (var result = await downloadResource.GetDownloadResourceResultAsync(packageIdentity, NuGet.Configuration.NullSettings.Instance, NuGet.Common.NullLogger.Instance, cts.Token))
+                {
+                    if (result.Status == DownloadResourceResultStatus.Cancelled)
+                    {
+                        throw new TaskCanceledException();
+                    }
+                    if (result.Status == DownloadResourceResultStatus.NotFound)
+                    {
+                        throw new Exception(String.Format("Package '{0}' not found", packageIdentity.Id + packageIdentity.Version.ToString()));
+                    }
+
+                    string tempFilePath = Path.GetTempFileName();
+
+                    using (var fileStream = File.OpenWrite(tempFilePath))
+                    {
+                        await result.PackageStream.CopyToAsync(fileStream);
+                    }
+
+                    return tempFilePath;
+                }
             }
             catch (OperationCanceledException)
             {
@@ -98,6 +116,8 @@ namespace PackageExplorer
             }
             finally
             {
+                downloadResource.Progress -= OnReportProgress;
+
                 timer.Stop();
 
                 // close progress dialog when done
@@ -111,86 +131,35 @@ namespace PackageExplorer
             }
         }
 
-        private void OnReportProgress(int percent, string description)
+        private void OnReportProgress(object sender, PackageProgressEventArgs args)
         {
             if (_progressDialog != null)
             {
                 // report progress must be done via UI thread
                 UIServices.BeginInvoke(() =>
+                {
+                    lock (_progressDialogLock)
                     {
-                        lock (_progressDialogLock)
+                        if (_progressDialog != null)
                         {
-                            if (_progressDialog != null)
-                            {
-                                _progressDialog.ReportProgress(percent, null, description);
-                            }
+                            int percentComplete = (int)(args.Complete * 100);
+                            string description = String.Format(
+                                CultureInfo.CurrentCulture,
+                                "Downloaded {0}%",
+                                percentComplete);
+
+                            _progressDialog.ReportProgress(percentComplete);
                         }
-                    });
+                    }
+                });
             }
         }
 
         #endregion
 
-        private async Task<string> DownloadData(Uri url, Action<int, string> reportProgressAction, CancellationToken cancelToken)
-        {
-            var handler = new HttpClientHandler { UseDefaultCredentials = true };
-            var httpClient = new HttpClient(handler);
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(HttpUtility.CreateUserAgentString(Constants.UserAgentClient));
-
-            using (HttpResponseMessage response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancelToken))
-            {
-                using (Stream responseStream = await response.Content.ReadAsStreamAsync())
-                {
-                    const int chunkSize = 4 * 1024;
-                    var totalBytes = (int)(response.Content.Headers.ContentLength ?? 0);
-                    var buffer = new byte[chunkSize];
-                    int readSoFar = 0;
-
-                    // while reading data from network, we write it to a temp file
-                    string tempFilePath = Path.GetTempFileName();
-                    using (FileStream fileStream = File.OpenWrite(tempFilePath))
-                    {
-                        while (readSoFar < totalBytes)
-                        {
-                            int bytesRead = await responseStream.ReadAsync(buffer, 0, Math.Min(chunkSize, totalBytes - readSoFar), cancelToken);
-                            readSoFar += bytesRead;
-
-                            cancelToken.ThrowIfCancellationRequested();
-
-                            fileStream.Write(buffer, 0, bytesRead);
-                            OnProgress(readSoFar, totalBytes, reportProgressAction);
-                        }
-                    }
-
-                    // read all bytes successfully
-                    if (readSoFar >= totalBytes)
-                    {
-                        return tempFilePath;
-                    }
-                }
-            }
-            return null;
-        }
-
         private void OnError(Exception error)
         {
             UIServices.Show((error.InnerException ?? error).Message, MessageLevel.Error);
-        }
-
-        private void OnProgress(int bytesReceived, int totalBytes, Action<int, string> reportProgress)
-        {
-            int percentComplete = (int)((bytesReceived * 100L) / totalBytes);
-            string description = String.Format(
-                CultureInfo.CurrentCulture,
-                "Downloaded {0}KB of {1}KB...",
-                ToKB(bytesReceived),
-                ToKB(totalBytes));
-            reportProgress(percentComplete, description);
-        }
-
-        private static long ToKB(long totalBytes)
-        {
-            return (totalBytes + 1023) / 1024;
         }
     }
 }

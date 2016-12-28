@@ -5,7 +5,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using NuGet;
 using NuGetPackageExplorer.Types;
-using PackageExplorer.Properties;
+using Settings = PackageExplorer.Properties.Settings;
 
 namespace PackageExplorer
 {

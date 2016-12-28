@@ -82,24 +82,26 @@ namespace PackageExplorer
                         File.Delete(deleteMePath);
 
                         // copy assemblies
-                        int numberOfFilesCopied = 
-                            FrameworkFolderForAssemblies.Sum(folder => plugin.UnpackPackage(folder, targetPath));
+                        try
+                        {
+                            foreach (var folder in FrameworkFolderForAssemblies)
+                            {
+                                plugin.ExtractContents(new PhysicalFileSystem(folder), targetPath);
+                            }
 
-                        if (numberOfFilesCopied == 0)
-                        {
-                            Directory.Delete(targetPath);
-                            UIServices.Value.Show(
-                                "Adding plugin failed. The selected package does not have any assembly inside the 'lib\\net40' folder.",
-                                MessageLevel.Error);
-                        }
-                        else
-                        {
                             bool succeeded = AddPluginToCatalog(pluginInfo, targetPath, quietMode: false);
                             if (!succeeded)
                             {
                                 DeletePlugin(pluginInfo);
                             }
                             return succeeded ? pluginInfo : null;
+                        }
+                        catch (Exception)
+                        {
+                            Directory.Delete(targetPath);
+                            UIServices.Value.Show(
+                                "Adding plugin failed. The selected package does not have any assembly inside the 'lib\\net40' folder.",
+                                MessageLevel.Error);
                         }
                     }
                 }

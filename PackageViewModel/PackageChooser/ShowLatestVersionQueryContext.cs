@@ -1,57 +1,46 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Services.Client;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using NuGet;
+using NuGet.Protocol.Core.Types;
 
 namespace PackageExplorerViewModel
 {
-    internal class ShowLatestVersionQueryContext<T> : QueryContextBase<T>, IQueryContext<T> where T : IPackageInfoType
+    internal class ShowLatestVersionQueryContext<T> : IQueryContext<T> where T : IPackageSearchMetadata
     {
+        private readonly PackageSearchResource _packageSearchResouce;
+        private readonly string _searchText;
+        private readonly SearchFilter _searchFilter;
         private readonly int _pageSize;
-        private int _pageIndex;
+        private int _pageIndex;  
+        private int? _maxPageIndex;
 
-        public ShowLatestVersionQueryContext(IQueryable<T> source, int pageSize) 
-            : base(source)
+        public ShowLatestVersionQueryContext(PackageSearchResource source, string search, SearchFilter filter, int pageSize)
         {
+            _packageSearchResouce = source;
+            _searchText = search;
+            _searchFilter = filter;
             _pageSize = pageSize;
-        }
-
-        private int PageCount
-        {
-            get { return (TotalItemCount + (_pageSize - 1)) / _pageSize; }
         }
 
         #region IQueryContext<T> Members
 
-        public int BeginPackage
-        {
-            get { return Math.Min(TotalItemCount, _pageIndex * _pageSize + 1); }
-        }
-
-        public int EndPackage
-        {
-            get { return Math.Min(TotalItemCount, (_pageIndex + 1) * _pageSize); }
-        }
+        public int CurrentPage { get { return _pageIndex; } }
 
         public async Task<IList<T>> GetItemsForCurrentPage(CancellationToken token)
         {
-            var pagedQuery = Source.Skip(_pageIndex * _pageSize).Take(_pageSize);
-            T[] queryResponse = (await LoadData(pagedQuery)).ToArray();
+            var result = await _packageSearchResouce.SearchAsync(_searchText, _searchFilter, _pageIndex * _pageSize, _pageSize, NuGet.Common.NullLogger.Instance, token);
 
             token.ThrowIfCancellationRequested();
 
-            foreach (var package in queryResponse)
-            {
-                package.ShowAll = false;
+            var list = result.Cast<T>().ToList();
+
+            if (list.Count < _pageSize)
+            {                       
+                _maxPageIndex = _pageIndex;
             }
 
-            token.ThrowIfCancellationRequested();
-
-            return queryResponse;
+            return list;
         }
 
         public bool MoveFirst()
@@ -62,12 +51,11 @@ namespace PackageExplorerViewModel
 
         public bool MoveNext()
         {
-            if (_pageIndex < PageCount - 1)
+            if (!_maxPageIndex.HasValue || _pageIndex < _maxPageIndex)
             {
                 _pageIndex++;
                 return true;
-            }
-
+            }      
             return false;
         }
 
@@ -79,12 +67,6 @@ namespace PackageExplorerViewModel
                 return true;
             }
             return false;
-        }
-
-        public bool MoveLast()
-        {
-            _pageIndex = PageCount - 1;
-            return true;
         }
 
         #endregion

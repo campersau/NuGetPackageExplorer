@@ -15,11 +15,12 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using NuGet;
 using NuGetPackageExplorer.Types;
-using PackageExplorer.Properties;
+using Settings = PackageExplorer.Properties.Settings;
 using PackageExplorerViewModel;
 using Constants = NuGet.Constants;
 using LazyPackageCommand = System.Lazy<NuGetPackageExplorer.Types.IPackageCommand, NuGetPackageExplorer.Types.IPackageCommandMetadata>;
 using StringResources = PackageExplorer.Resources.Resources;
+using NuGet.Protocol.Core.Types;
 
 namespace PackageExplorer
 {
@@ -144,8 +145,11 @@ namespace PackageExplorer
                 }
                 else if (extension.Equals(Constants.ManifestExtension, StringComparison.OrdinalIgnoreCase))
                 {
-                    var builder = new PackageBuilder(packagePath);
-                    package = builder.Build();
+                    using (var stream = File.OpenRead(packagePath))
+                    {
+                        var builder = new PackageBuilder(stream, Path.GetDirectoryName(packagePath));
+                        package = builder.Build();
+                    }
                 }
 
                 if (package != null)
@@ -283,52 +287,44 @@ namespace PackageExplorer
                 return;
             }
 
-            PackageInfo selectedPackageInfo = PackageChooser.SelectPackage(searchTerm);
+            var selectedPackageInfo = PackageChooser.SelectPackage(searchTerm);
             if (selectedPackageInfo == null)
             {
                 return;
             }
 
-            if (selectedPackageInfo.IsLocalPackage)
+            var repository = PackageChooser.Repository;
+
+            var packageVersion = new SemanticVersion(selectedPackageInfo.Identity.Version.Version);
+            IPackage cachePackage = MachineCache.Default.FindPackage(selectedPackageInfo.Identity.Id, packageVersion);
+
+            Func<IPackage, DispatcherOperation> processPackageAction = (package) =>
+                                                    {
+                                                        LoadPackage(package, repository.PackageSource.Source, PackageType.DataServicePackage);
+
+                                                        // adding package to the cache, but with low priority
+                                                        return Dispatcher.BeginInvoke(
+                                                        (Action<IPackage>)MachineCache.Default.AddPackage,
+                                                        DispatcherPriority.ApplicationIdle,
+                                                        package);
+                                                    };
+
+            if (cachePackage == null) // TODO: || cachePackage.GetHash() != selectedPackageInfo.PackageHash)
             {
-                await OpenLocalPackage(selectedPackageInfo.DownloadUrl.LocalPath);
+                var downloadResource = await repository.GetResourceAsync<DownloadResource>();
+
+                var downloadedPackage = await PackageDownloader.Download(
+                    downloadResource,
+                    selectedPackageInfo.Identity);
+
+                if (downloadedPackage != null)
+                {
+                    await processPackageAction(downloadedPackage);
+                }
             }
-            else 
+            else
             {
-                var packageVersion = new SemanticVersion(selectedPackageInfo.Version);
-                IPackage cachePackage = MachineCache.Default.FindPackage(selectedPackageInfo.Id, packageVersion);
-
-                Func<IPackage, DispatcherOperation> processPackageAction = (package) =>
-                                                        {
-                                                            DataServicePackage servicePackage = selectedPackageInfo.AsDataServicePackage();
-                                                            servicePackage.CorePackage = package;
-                                                            LoadPackage(servicePackage,
-                                                                        selectedPackageInfo.DownloadUrl.ToString(),
-                                                                        PackageType.DataServicePackage);
-
-                                                            // adding package to the cache, but with low priority
-                                                            return Dispatcher.BeginInvoke(
-                                                                (Action<IPackage>) MachineCache.Default.AddPackage,
-                                                                DispatcherPriority.ApplicationIdle,
-                                                                package);
-                                                        };
-
-                if (cachePackage == null || cachePackage.GetHash() != selectedPackageInfo.PackageHash)
-                {
-                    IPackage downloadedPackage = await PackageDownloader.Download(
-                        selectedPackageInfo.DownloadUrl,
-                        selectedPackageInfo.Id,
-                        packageVersion.ToString());
-
-                    if (downloadedPackage != null)
-                    {
-                        await processPackageAction(downloadedPackage);
-                    }
-                }
-                else
-                {
-                    await processPackageAction(cachePackage);
-                }
+                await processPackageAction(cachePackage);
             }
         }
 
@@ -494,24 +490,14 @@ namespace PackageExplorer
                 return;
             }
 
-            Uri downloadUrl;
-            if (Uri.TryCreate(packageUrl, UriKind.Absolute, out downloadUrl) && downloadUrl.IsRemoteUri())
+            var repository = PackageExplorerViewModel.PackageRepositoryFactory.CreateRepository(packageUrl);
+            var downloadResouce = await repository.GetResourceAsync<DownloadResource>();
+            var packageIdentity = new NuGet.Packaging.Core.PackageIdentity(id, NuGet.Versioning.NuGetVersion.Parse(version.ToString()));
+
+            var downloadedPackage = await PackageDownloader.Download(downloadResouce, packageIdentity);
+            if (downloadedPackage != null)
             {
-                IPackage downloadedPackage = await PackageDownloader.Download(downloadUrl, id, version.ToString());
-                if (downloadedPackage != null)
-                {
-                    LoadPackage(downloadedPackage, packageUrl, PackageType.DataServicePackage);
-                }
-            }
-            else
-            {
-                UIServices.Show(
-                    String.Format(
-                        CultureInfo.CurrentCulture,
-                        StringResources.Dialog_InvalidPackageUrl,
-                        packageUrl),
-                    MessageLevel.Error
-                    );
+                LoadPackage(downloadedPackage, packageUrl, PackageType.DataServicePackage);
             }
         }
 
@@ -560,21 +546,15 @@ namespace PackageExplorer
             }
             else
             {
-                UIServices.Show("The NuGet download cache does not exist.", MessageLevel.Information);
+                UIServices.Show("The NuGet download cache does not exist.", MessageLevel.Info);
             }
         }
 
         private void ClearDownloadCache_Click(object sender, EventArgs args)
         {
-            bool result = MachineCache.Default.Clear();
-            if (result)
-            {
-                UIServices.Show("The NuGet download cache has been cleared successfully.", MessageLevel.Information);
-            }
-            else
-            {
-                UIServices.Show("The NuGet download cache does not exist.", MessageLevel.Information);
-            }
+            MachineCache.Default.Clear();
+
+            UIServices.Show("The NuGet download cache has been cleared successfully.", MessageLevel.Info);
         }
 
         #region Drag & drop
