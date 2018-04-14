@@ -10,6 +10,11 @@ namespace PackageExplorer
     /// </summary>
     public partial class PackageDetailActionsControl : UserControl
     {
+        public PackageDetailActionsControl()
+        {
+            InitializeComponent();
+        }
+
         private void PackageGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var viewModel = (PackageInfoViewModel) DataContext;
