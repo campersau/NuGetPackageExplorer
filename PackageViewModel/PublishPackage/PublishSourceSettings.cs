@@ -18,12 +18,12 @@ namespace PackageExplorerViewModel
 
         #region ISourceSettings Members
 
-        public IList<string> GetSources()
+        public IList<NuGet.Configuration.PackageSource> GetSources()
         {
             var sources = _settingsManager.GetPublishSources();
             for (var i = 0; i < sources.Count; i++)
             {
-                sources[i] = MigrateOfficialNuGetSource(sources[i]);
+                MigrateOfficialNuGetSource(sources[i]);
             }
 
             return sources;
@@ -34,30 +34,27 @@ namespace PackageExplorerViewModel
             _settingsManager.SetPublishSources(sources);
         }
 
-        public string DefaultSource
-        {
-            get { return NuGetConstants.NuGetPublishFeed; }
-        }
+        public NuGet.Configuration.PackageSource DefaultSource => NuGetConstants.NuGetPublishFeedPackageSource;
 
-        public string ActiveSource
+        public NuGet.Configuration.PackageSource ActiveSource
         {
             get
             {
-                return MigrateOfficialNuGetSource(_settingsManager.ActivePublishSource);
+                var packageSource = _settingsManager.ActivePublishSource;
+                MigrateOfficialNuGetSource(packageSource);
+                return packageSource;
             }
             set { _settingsManager.ActivePublishSource = value; }
         }
 
         #endregion
 
-        private static string MigrateOfficialNuGetSource(string source)
+        private static void MigrateOfficialNuGetSource(NuGet.Configuration.PackageSource source)
         {
-            if (NuGetConstants.V2LegacyNuGetPublishFeed.Equals(source, StringComparison.OrdinalIgnoreCase))
+            if (NuGetConstants.V2LegacyNuGetPublishFeed.Equals(source.Source, StringComparison.OrdinalIgnoreCase))
             {
-                return NuGetConstants.NuGetPublishFeed;
+                source.Source = NuGetConstants.NuGetPublishFeed;
             }
-
-            return source;
         }
     }
 }

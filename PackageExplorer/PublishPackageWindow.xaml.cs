@@ -1,4 +1,6 @@
 ﻿using System.Windows;
+using System.Windows.Input;
+using NuGet.Configuration;
 using NuGetPe;
 using PackageExplorerViewModel;
 
@@ -29,6 +31,20 @@ namespace PackageExplorer
             {
                 var viewModel = (PublishPackageViewModel)DataContext;
                 await viewModel.PushPackage();
+            }
+        }
+
+        private void PublishUrl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                var source = PublishUrl.Text;
+                if (!string.IsNullOrEmpty(source))
+                {
+                    var viewModel = (PublishPackageViewModel)DataContext;
+                    viewModel.ChangePackageSourceCommand.Execute(new PackageSource(source.Trim()));
+                    e.Handled = true;
+                }
             }
         }
     }

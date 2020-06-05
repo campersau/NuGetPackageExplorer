@@ -9,5 +9,9 @@
 
         public const string V2LegacyNuGetPublishFeed = "https://nuget.org";
         public const string NuGetPublishFeed = "https://www.nuget.org";
+
+        public static readonly NuGet.Configuration.PackageSource DefaultFeedPackageSource = new NuGet.Configuration.PackageSource(DefaultFeedUrl);
+        public static readonly NuGet.Configuration.PackageSource NuGetPublishFeedPackageSource = new NuGet.Configuration.PackageSource(NuGetPublishFeed);
+        public static readonly NuGet.Configuration.PackageSource PluginFeedPackageSource = new NuGet.Configuration.PackageSource(PluginFeedUrl);
     }
 }

@@ -121,7 +121,7 @@ namespace PackageExplorer
         {
             if (_pluginDialog == null)
             {
-                _pluginViewModel = ViewModelFactory.CreatePackageChooserViewModel(NuGetConstants.PluginFeedUrl);
+                _pluginViewModel = ViewModelFactory.CreatePackageChooserViewModel(NuGetConstants.PluginFeedPackageSource);
                 _pluginDialog = new PackageChooserDialog(SettingsManager, _pluginViewModel);
             }
 

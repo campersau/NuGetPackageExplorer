@@ -19,8 +19,6 @@ namespace PackageExplorer
     [Export(typeof(ISettingsManager))]
     internal class SettingsManager : ISettingsManager, INotifyPropertyChanged
     {
-        public const string ApiKeysSectionName = "apikeys";
-
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private readonly object _lockObject = new object();
@@ -32,7 +30,7 @@ namespace PackageExplorer
 
         private T GetValue<T>([CallerMemberName] string? name = null)
         {
-            lock(_lockObject)
+            lock (_lockObject)
             {
                 object value;
                 try
@@ -80,7 +78,7 @@ namespace PackageExplorer
                 }
 
                 return default!;
-            }            
+            }
         }
 
         // Don't load these types inline
@@ -102,7 +100,7 @@ namespace PackageExplorer
         {
             name ??= propertyName;
 
-            lock(_lockObject)
+            lock (_lockObject)
             {
                 try
                 {
@@ -127,7 +125,7 @@ namespace PackageExplorer
                 {
                     // not much we can do if we can't read/write the settings file
                 }
-            }            
+            }
 
             OnPropertyChanged(propertyName);
         }
@@ -144,6 +142,19 @@ namespace PackageExplorer
             settings.Values[name] = value;
         }
 
+        private NuGet.Configuration.ISettings? _nuGetSettings;
+        public NuGet.Configuration.ISettings NuGetSettings
+        {
+            get
+            {
+                if (_nuGetSettings == null)
+                {
+                    _nuGetSettings = NuGet.Configuration.Settings.LoadDefaultSettings(null);
+                }
+                return _nuGetSettings;
+            }
+        }
+
         public IList<string> GetMruFiles()
         {
             return GetValue<List<string>>("MruFiles") ?? new List<string>();
@@ -154,9 +165,27 @@ namespace PackageExplorer
             SetValue(files.ToList(), "MruFiles");
         }
 
-        public IList<string> GetPackageSources()
+        public IList<NuGet.Configuration.PackageSource> GetPackageSources()
         {
-            return GetValue<List<string>>("MruPackageSources") ?? new List<string>();
+            var list = new List<NuGet.Configuration.PackageSource>();
+            foreach (var packageSource in NuGet.Configuration.SettingsUtility.GetEnabledSources(NuGetSettings))
+            {
+                list.Add(packageSource);
+            }
+
+            var legacySources = GetValue<List<string>>("MruPackageSources");
+            if (legacySources != null)
+            {
+                foreach (var legacySource in legacySources)
+                {
+                    if (!list.Any(packageSource => packageSource.Source == legacySource))
+                    {
+                        list.Add(new NuGet.Configuration.PackageSource(legacySource));
+                    }
+                }
+            }
+
+            return list;
         }
 
         public void SetPackageSources(IEnumerable<string> sources)
@@ -164,15 +193,44 @@ namespace PackageExplorer
             SetValue(sources.ToList(), "MruPackageSources");
         }
 
-        public string ActivePackageSource
+        public NuGet.Configuration.PackageSource ActivePackageSource
         {
-            get => GetValue<string>("PackageSource") ?? NuGetConstants.DefaultFeedUrl;
-            set => SetValue(value, "PackageSource");
+            get
+            {
+                var feedSource = GetValue<string>("PackageSource");
+                foreach (var packageSource in GetPackageSources())
+                {
+                    if (packageSource.Source == feedSource)
+                    {
+                        return packageSource;
+                    }
+                }
+                return NuGetConstants.DefaultFeedPackageSource;
+            }
+            set => SetValue(value.Source, "PackageSource");
         }
 
-        public IList<string> GetPublishSources()
+        public IList<NuGet.Configuration.PackageSource> GetPublishSources()
         {
-            return GetValue<List<string>>("PublishPackageSources") ?? new List<string>();
+            var list = new List<NuGet.Configuration.PackageSource>();
+            foreach (var packageSource in NuGet.Configuration.SettingsUtility.GetEnabledSources(NuGetSettings))
+            {
+                list.Add(packageSource);
+            }
+
+            var legacySources = GetValue<List<string>>("PublishPackageSources");
+            if (legacySources != null)
+            {
+                foreach (var legacySource in legacySources)
+                {
+                    if (!list.Any(packageSource => packageSource.Source == legacySource))
+                    {
+                        list.Add(new NuGet.Configuration.PackageSource(legacySource));
+                    }
+                }
+            }
+
+            return list;
         }
 
         public void SetPublishSources(IEnumerable<string> sources)
@@ -180,24 +238,31 @@ namespace PackageExplorer
             SetValue(sources.ToList(), "PublishPackageSources");
         }
 
-        public string ActivePublishSource
+        public NuGet.Configuration.PackageSource ActivePublishSource
         {
-            get => GetValue<string>("PublishPackageLocation") ?? NuGetConstants.NuGetPublishFeed;
-            set => SetValue(value, "PublishPackageLocation");
+            get
+            {
+                var publishSource = GetValue<string>("PublishPackageLocation");
+                foreach (var packageSource in GetPublishSources())
+                {
+                    if (packageSource.Source == publishSource)
+                    {
+                        return packageSource;
+                    }
+                }
+                return NuGetConstants.NuGetPublishFeedPackageSource;
+            }
+            set => SetValue(value.Source, "PublishPackageLocation");
         }
 
         public string? ReadApiKey(string source)
         {
-            var settings = new UserSettings(new PhysicalFileSystem(Environment.CurrentDirectory));
-            var key = settings.GetDecryptedValue(ApiKeysSectionName, source);
-
-            return key;
+            return NuGet.Configuration.SettingsUtility.GetDecryptedValueForAddItem(NuGetSettings, NuGet.Configuration.ConfigurationConstants.ApiKeys, source);
         }
 
         public void WriteApiKey(string source, string apiKey)
         {
-            var settings = new UserSettings(new PhysicalFileSystem(Environment.CurrentDirectory));
-            settings.SetEncryptedValue(ApiKeysSectionName, source, apiKey);
+            NuGet.Configuration.SettingsUtility.SetEncryptedValueForAddItem(NuGetSettings, NuGet.Configuration.ConfigurationConstants.ApiKeys, source, apiKey);
         }
 
         public bool ShowPrereleasePackages

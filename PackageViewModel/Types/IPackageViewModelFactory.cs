@@ -7,7 +7,7 @@ namespace NuGetPackageExplorer.Types
     public interface IPackageViewModelFactory
     {
         Task<PackageViewModel> CreateViewModel(IPackage package, string packagePath, string packageSource);
-        PackageChooserViewModel CreatePackageChooserViewModel(string? fixedPackageSource);
+        PackageChooserViewModel CreatePackageChooserViewModel(NuGet.Configuration.PackageSource? fixedPackageSource);
         PluginManagerViewModel CreatePluginManagerViewModel();
     }
 }

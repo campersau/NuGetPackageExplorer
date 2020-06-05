@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using NuGet.Configuration;
 
 namespace NuGetPackageExplorer.Types
 {
     public interface ISettingsManager
     {
-        string ActivePackageSource { get; set; }
-        string ActivePublishSource { get; set; }
+        PackageSource ActivePackageSource { get; set; }
+        PackageSource ActivePublishSource { get; set; }
         bool ShowPrereleasePackages { get; set; }
         bool AutoLoadPackages { get; set; }
 
@@ -15,11 +16,11 @@ namespace NuGetPackageExplorer.Types
         void SetMruFiles(IEnumerable<string> files);
 
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        IList<string> GetPackageSources();
+        IList<PackageSource> GetPackageSources();
         void SetPackageSources(IEnumerable<string> sources);
 
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        IList<string> GetPublishSources();
+        IList<PackageSource> GetPublishSources();
         void SetPublishSources(IEnumerable<string> sources);
 
         string? ReadApiKey(string source);

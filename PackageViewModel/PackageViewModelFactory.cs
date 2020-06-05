@@ -81,7 +81,7 @@ namespace PackageExplorerViewModel
                 PackageRules);
         }
 
-        public PackageChooserViewModel CreatePackageChooserViewModel(string? fixedPackageSource)
+        public PackageChooserViewModel CreatePackageChooserViewModel(NuGet.Configuration.PackageSource? fixedPackageSource)
         {
             var packageSourceSettings = new PackageSourceSettings(SettingsManager);
             var packageSourceManager = new MruPackageSourceManager(packageSourceSettings);

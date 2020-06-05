@@ -46,7 +46,7 @@
         <!-- Publish Url -->
         <DockPanel DockPanel.Dock="Top" Margin="7,8,10,5">
             <Label DockPanel.Dock="Left" Target="{Binding ElementName=PublishUrl}" Content="Publish _Url:" Width="110" />
-            <ComboBox x:Name="PublishUrl" ItemsSource="{Binding PublishSources}" IsReadOnly="False" IsEditable="True" VerticalContentAlignment="Center" SelectedItem="{Binding SelectedPublishItem, BindingGroupName=Random}" IsEnabled="{Binding CanPublish}">
+            <ComboBox x:Name="PublishUrl" ItemsSource="{Binding PublishSources}" IsReadOnly="False" IsEditable="True" VerticalContentAlignment="Center" SelectedItem="{Binding SelectedPublishItem, BindingGroupName=Random}" IsEnabled="{Binding CanPublish}" PreviewKeyDown="PublishUrl_PreviewKeyDown">
                 <ComboBox.Text>
                     <Binding Path="PublishUrl">
                         <Binding.ValidationRules>

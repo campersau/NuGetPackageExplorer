@@ -23,22 +23,22 @@ namespace PackageExplorerViewModel
         private FeedType _feedType;
         private MruPackageSourceManager? _packageSourceManager;
         private readonly IUIServices _uIServices;
-        private readonly string? _defaultPackageSourceUrl;
+        private readonly NuGet.Configuration.PackageSource? _defaultPackageSource;
         private bool _disposed;
 
         public PackageChooserViewModel(MruPackageSourceManager packageSourceManager,
                                        IUIServices uIServices,
                                        bool showPrereleasePackages,
-                                       string? defaultPackageSourceUrl)
+                                       NuGet.Configuration.PackageSource? defaultPackageSource)
         {
             _showPrereleasePackages = showPrereleasePackages;
-            _defaultPackageSourceUrl = defaultPackageSourceUrl;
+            _defaultPackageSource = defaultPackageSource;
             Packages = new ObservableCollection<object>();
 
             SearchCommand = new RelayCommand<string>(Search, CanSearch);
             ClearSearchCommand = new RelayCommand(ClearSearch, CanClearSearch);
             LoadMoreCommand = new RelayCommand(async () => await LoadMore(CancellationToken.None), CanLoadMore);
-            ChangePackageSourceCommand = new RelayCommand<string>(ChangePackageSource);
+            ChangePackageSourceCommand = new RelayCommand<NuGet.Configuration.PackageSource>(ChangePackageSource);
             CancelCommand = new RelayCommand(CancelCommandExecute, CanCancelCommandExecute);
 
             _packageSourceManager = packageSourceManager ?? throw new ArgumentNullException(nameof(packageSourceManager));
@@ -77,32 +77,32 @@ namespace PackageExplorerViewModel
             }
         }
 
-        public string PackageSource
+        public NuGet.Configuration.PackageSource PackageSource
         {
             get
             {
                 CheckDisposed();
-                return _defaultPackageSourceUrl ?? _packageSourceManager!.ActivePackageSource;
+                return _defaultPackageSource ?? _packageSourceManager!.ActivePackageSource;
             }
             private set
             {
-                if (_defaultPackageSourceUrl != null)
+                if (_defaultPackageSource != null)
                 {
                     throw new InvalidOperationException(
                         "Cannot set active package source when fixed package source is used.");
                 }
                 CheckDisposed();
-                _packageSourceManager!.ActivePackageSource = value.Trim();
+                _packageSourceManager!.ActivePackageSource = value;
                 OnPropertyChanged();
             }
         }
 
         public bool AllowsChangingPackageSource
         {
-            get { return _defaultPackageSourceUrl == null; }
+            get { return _defaultPackageSource == null; }
         }
 
-        public ObservableCollection<string> PackageSources
+        public ObservableCollection<NuGet.Configuration.PackageSource> PackageSources
         {
             get
             {
@@ -251,7 +251,7 @@ namespace PackageExplorerViewModel
                 catch (ArgumentException)
                 {
                     var origSource = PackageSource;
-                    PackageSource = _defaultPackageSourceUrl ?? NuGetConstants.DefaultFeedUrl;
+                    PackageSource = _defaultPackageSource ?? NuGetConstants.DefaultFeedPackageSource;
                     ActiveRepository = PackageRepositoryFactory.CreateRepository(PackageSource);
 
                     _uIServices.Show($"Package Source '{origSource}' is not valid. Defaulting to '{NuGetConstants.DefaultFeedUrl}", MessageLevel.Error);
@@ -359,9 +359,9 @@ namespace PackageExplorerViewModel
         }
         #endregion
 
-        private async void ChangePackageSource(string source)
+        private async void ChangePackageSource(NuGet.Configuration.PackageSource source)
         {
-            if (PackageSource != source)
+            if (PackageSource.Source != source.Source)
             {
                 DiagnosticsClient.TrackEvent("PackageChooserViewModel_ChangePackageSource");
 
@@ -377,17 +377,9 @@ namespace PackageExplorerViewModel
 
                     // add the new source to MRU list, after the load succeeds, in case there's an error with the source
                     _packageSourceManager!.NotifyPackageSourceAdded(source);
-                }
-                catch (Exception e)
-                {
-                    _uIServices.Show(e.Message, MessageLevel.Error);
-                }
-            }
-            else
-            {
-                try
-                {
-                    await LoadPackages();
+
+                    // this is to make sure the combo box doesn't goes blank after NotifyPackageSourceAdded
+                    PackageSource = source;
                 }
                 catch (Exception e)
                 {

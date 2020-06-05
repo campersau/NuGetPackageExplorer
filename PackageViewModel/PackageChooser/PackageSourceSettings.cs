@@ -14,28 +14,16 @@ namespace PackageExplorerViewModel
         {
             Debug.Assert(settingsManager != null);
             _settingsManager = settingsManager;
-
-            // migrate active package source
-            if (NuGetConstants.V2FeedUrl.Equals(ActiveSource, StringComparison.OrdinalIgnoreCase) ||
-                NuGetConstants.V2LegacyFeedUrl.Equals(ActiveSource, StringComparison.OrdinalIgnoreCase))
-            {
-                ActiveSource = NuGetConstants.DefaultFeedUrl;
-            }
         }
 
-        public IList<string> GetSources()
+        public IList<NuGet.Configuration.PackageSource> GetSources()
         {
             var sources = _settingsManager.GetPackageSources();
-
 
             // migrate nuget v1 feed to v2 feed
             for (var i = 0; i < sources.Count; i++)
             {
-                if (sources[i].Equals(NuGetConstants.V2LegacyFeedUrl, StringComparison.OrdinalIgnoreCase) ||
-                    sources[i].Equals(NuGetConstants.V2FeedUrl, StringComparison.OrdinalIgnoreCase))
-                {
-                    sources[i] = NuGetConstants.DefaultFeedUrl;
-                }
+                MigrateOfficialNuGetSource(sources[i]);
             }
 
             return sources;
@@ -46,15 +34,26 @@ namespace PackageExplorerViewModel
             _settingsManager.SetPackageSources(sources);
         }
 
-        public string DefaultSource
+        public NuGet.Configuration.PackageSource DefaultSource => NuGetConstants.DefaultFeedPackageSource;
+
+        public NuGet.Configuration.PackageSource ActiveSource
         {
-            get { return NuGetConstants.DefaultFeedUrl; }
+            get
+            {
+                var packageSource = _settingsManager.ActivePackageSource;
+                MigrateOfficialNuGetSource(packageSource);
+                return packageSource;
+            }
+            set { _settingsManager.ActivePackageSource = value; }
         }
 
-        public string ActiveSource
+        private static void MigrateOfficialNuGetSource(NuGet.Configuration.PackageSource source)
         {
-            get { return _settingsManager.ActivePackageSource; }
-            set { _settingsManager.ActivePackageSource = value; }
+            if (NuGetConstants.V2LegacyFeedUrl.Equals(source.Source, StringComparison.OrdinalIgnoreCase) ||
+                NuGetConstants.V2FeedUrl.Equals(source.Source, StringComparison.OrdinalIgnoreCase))
+            {
+                source.Source = NuGetConstants.DefaultFeedUrl;
+            }
         }
     }
 }

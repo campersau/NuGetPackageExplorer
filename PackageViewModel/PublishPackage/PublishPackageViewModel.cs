@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using System.Windows.Input;
+
 using NuGet.Common;
 using NuGet.Packaging;
 using NuGet.Protocol.Core.Types;
+
 using NuGetPackageExplorer.Types;
+
 using NuGetPe;
 
 namespace PackageExplorerViewModel
 {
-    public sealed class PublishPackageViewModel : ViewModelBase, IObserver<int>, IDisposable
+    public sealed class PublishPackageViewModel : ViewModelBase, IDisposable
     {
         private readonly MruPackageSourceManager _mruSourceManager;
         private readonly IPackageMetadata _package;
@@ -23,7 +26,6 @@ namespace PackageExplorerViewModel
         private string? _publishKeyOrPAT;
         private bool? _publishAsUnlisted = true;
         private bool? _appendV2ApiToUrl = true;
-        private string? _selectedPublishItem;
         private bool _showProgress;
         private string? _status;
         private bool _suppressReadingApiKey;
@@ -45,7 +47,10 @@ namespace PackageExplorerViewModel
             _packageFilePath = viewModel.GetCurrentPackageTempFile();
             SelectedPublishItem = _mruSourceManager.ActivePackageSource;
             PublishAsUnlisted = _settingsManager.PublishAsUnlisted;
+            ChangePackageSourceCommand = new RelayCommand<NuGet.Configuration.PackageSource>(ChangePackageSource);
         }
+
+        public ICommand ChangePackageSourceCommand { get; private set; }
 
         public string? PublishKeyOrPAT
         {
@@ -60,58 +65,49 @@ namespace PackageExplorerViewModel
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
-        public string PublishUrl
+        public NuGet.Configuration.PackageSource SelectedPublishItem
         {
             get { return _mruSourceManager.ActivePackageSource; }
             set
             {
-                if (_mruSourceManager.ActivePackageSource != value)
+                if (value != null)
                 {
-                    _mruSourceManager.ActivePackageSource = value;
-                    OnPropertyChanged(nameof(PublishUrl));
-                }
-            }
-        }
-
-        public string? SelectedPublishItem
-        {
-            get { return _selectedPublishItem; }
-            set
-            {
-                if (_selectedPublishItem != value)
-                {
-                    _selectedPublishItem = value;
-                    OnPropertyChanged(nameof(SelectedPublishItem));
-
-                    if (value != null)
+                    if (_mruSourceManager.ActivePackageSource != value)
                     {
-                        // store the selected source into settings
-                        PublishUrl = value;
+                        _mruSourceManager.ActivePackageSource = value;
+                        OnPropertyChanged(nameof(SelectedPublishItem));
+                    }
 
-                        if (!_suppressReadingApiKey)
+                    if (!_suppressReadingApiKey)
+                    {
+                        // when the selection change, we retrieve the API key for that source
+                        try
                         {
-                            // when the selection change, we retrieve the API key for that source
-                            try
+                            var key = _settingsManager.ReadApiKey(value.Source);
+                            if (!string.IsNullOrEmpty(key))
                             {
-                                var key = _settingsManager.ReadApiKey(value);
-                                if (!string.IsNullOrEmpty(key))
-                                {
-                                    PublishKeyOrPAT = key;
-                                }
+                                PublishKeyOrPAT = key;
                             }
-                            catch (Exception e)
-                            {
-                                _uiServices.Show("Cannot read API key:\n" + e.Message, MessageLevel.Error);
-                                PublishKeyOrPAT = null;
-                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _uiServices.Show("Cannot read API key:\n" + e.Message, MessageLevel.Error);
+                            PublishKeyOrPAT = null;
                         }
                     }
                 }
             }
         }
 
-        public ObservableCollection<string> PublishSources
+        private void ChangePackageSource(NuGet.Configuration.PackageSource source)
+        {
+            if (SelectedPublishItem.Source != source.Source)
+            {
+                SelectedPublishItem = source;
+            }
+        }
+
+        public ObservableCollection<NuGet.Configuration.PackageSource> PublishSources
         {
             get { return _mruSourceManager.PackageSources; }
         }
@@ -204,37 +200,6 @@ namespace PackageExplorerViewModel
             }
         }
 
-        #region IObserver<int> Members
-
-        public void OnCompleted()
-        {
-            ShowProgress = false;
-            HasError = false;
-            Status = (PublishAsUnlisted == true) ? "Package published and unlisted successfully." : "Package published successfully.";
-            if (PublishKeyOrPAT != null)
-            {
-                _settingsManager.WriteApiKey(PublishUrl, PublishKeyOrPAT);
-            }
-
-            CanPublish = true;
-        }
-
-        public void OnError(Exception error)
-        {
-            if (error is null)
-                throw new ArgumentNullException(nameof(error));
-            ShowProgress = false;
-            HasError = true;
-            Status = error.Message;
-            CanPublish = true;
-        }
-
-        public void OnNext(int value)
-        {
-        }
-
-        #endregion
-
         public async Task PushPackage()
         {
             DiagnosticsClient.TrackEvent("PushPackage");
@@ -248,40 +213,50 @@ namespace PackageExplorerViewModel
 
             try
             {
-                var repository = PackageRepositoryFactory.CreateRepository(PublishUrl);
+                var repository = PackageRepositoryFactory.CreateRepository(SelectedPublishItem);
                 var updateResource = await repository.GetResourceAsync<PackageUpdateResource>();
 
                 await updateResource.Push(_packageFilePath, null, 999, false, s => PublishKeyOrPAT, s => PublishKeyOrPAT, AppendV2ApiToUrl != true, false, null, NullLogger.Instance);
-                
+
 
                 if (PublishAsUnlisted == true)
                 {
                     await updateResource.Delete(Id, Version, s => PublishKeyOrPAT, s => true, AppendV2ApiToUrl != true, NullLogger.Instance);
                 }
 
-                OnCompleted();
+                HasError = false;
+                Status = (PublishAsUnlisted == true) ? "Package published and unlisted successfully." : "Package published successfully.";
+                if (PublishKeyOrPAT != null)
+                {
+                    _settingsManager.WriteApiKey(SelectedPublishItem.Source, PublishKeyOrPAT);
+                }
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                OnError(exception);
+                HasError = true;
+                Status = ex.Message;
             }
             finally
             {
-                // add the publish url to the list
-                _mruSourceManager.NotifyPackageSourceAdded(PublishUrl);
-
                 _credentialPublishProvider.PersonalAccessToken = null;
 
-                // this is to make sure the combo box doesn't goes blank after publishing
+                var source = SelectedPublishItem;
+                // add the publish url to the list
+                _mruSourceManager.NotifyPackageSourceAdded(source);
+
+                // this is to make sure the combo box doesn't goes blank after NotifyPackageSourceAdded
                 try
                 {
                     _suppressReadingApiKey = true;
-                    SelectedPublishItem = PublishUrl;
+                    SelectedPublishItem = source;
                 }
                 finally
                 {
                     _suppressReadingApiKey = false;
                 }
+
+                ShowProgress = false;
+                CanPublish = true;
             }
         }
 

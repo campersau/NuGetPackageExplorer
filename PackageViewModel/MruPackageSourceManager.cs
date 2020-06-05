@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using NuGet.Configuration;
 using NuGetPackageExplorer.Types;
 
 namespace PackageExplorerViewModel
@@ -17,13 +19,13 @@ namespace PackageExplorerViewModel
             LoadDataFromSettings();
         }
 
-        public string ActivePackageSource { get; set; }
+        public PackageSource ActivePackageSource { get; set; }
 
-        public ObservableCollection<string> PackageSources { get; } = new ObservableCollection<string>();
-        
+        public ObservableCollection<PackageSource> PackageSources { get; } = new ObservableCollection<PackageSource>();
+
         public void Dispose()
         {
-            _sourceSettings.SetSources(PackageSources);
+            _sourceSettings.SetSources(PackageSources.Select(packageSource => packageSource.Source));
             _sourceSettings.ActiveSource = ActivePackageSource;
         }
 
@@ -39,67 +41,71 @@ namespace PackageExplorerViewModel
                 }
             }
 
-            if (!string.IsNullOrEmpty(_sourceSettings.ActiveSource))
+            if (!string.IsNullOrEmpty(_sourceSettings.ActiveSource.Source))
             {
                 AddSource(_sourceSettings.ActiveSource);
                 ActivePackageSource = _sourceSettings.ActiveSource;
             }
 
             // if there is no source (this happens after upgrading), add the default source to it
-            if (PackageSources.Count == 0 || !PackageSources.Contains(_sourceSettings.DefaultSource))
+            var defaultFeed = _sourceSettings.DefaultSource;
+            if (PackageSources.Count == 0 || !PackageSources.Any(packageSource => packageSource.Source == defaultFeed.Source))
             {
-                PackageSources.Insert(0, _sourceSettings.DefaultSource);
+                PackageSources.Insert(0, defaultFeed);
             }
 
-            if (string.IsNullOrEmpty(ActivePackageSource))
+            if (string.IsNullOrEmpty(ActivePackageSource?.Source))
             {
                 // assign the active package source to the first one if it's not already assigned
                 ActivePackageSource = PackageSources[0];
             }
         }
 
-        public void NotifyPackageSourceAdded(string newSource)
+        public void NotifyPackageSourceAdded(PackageSource newSource)
         {
             AddSource(newSource);
         }
 
-        private void AddSource(string newSource)
+        private void AddSource(PackageSource newSource)
         {
             if (newSource == null)
             {
                 throw new ArgumentNullException(nameof(newSource));
             }
 
-            var defaultFeed = _sourceSettings.DefaultSource;
-
-            if (newSource.Equals(defaultFeed, StringComparison.OrdinalIgnoreCase))
+            var index = IndexOfPackage(newSource);
+            if (index == -1)
             {
-                return;
+                PackageSources.Insert(0, newSource);
             }
-
-            PackageSources.Remove(defaultFeed);
-
-            SmartRemove(newSource);
-            PackageSources.Insert(0, newSource);
+            else
+            {
+                PackageSources[index] = newSource;
+                PackageSources.Move(index, 0);
+            }
 
             if (PackageSources.Count > MaxItem)
             {
                 PackageSources.RemoveAt(PackageSources.Count - 1);
             }
 
-            PackageSources.Insert(0, defaultFeed);
+            var defaultSourceIndex = IndexOfPackage(_sourceSettings.DefaultSource);
+            if (defaultSourceIndex != -1)
+            {
+                PackageSources.Move(defaultSourceIndex, 0);
+            }
         }
 
-        private void SmartRemove(string item)
+        private int IndexOfPackage(PackageSource item)
         {
             for (var i = 0; i < PackageSources.Count; i++)
             {
-                if (PackageSources[i].Equals(item, StringComparison.OrdinalIgnoreCase))
+                if (PackageSources[i].Source.Equals(item.Source, StringComparison.OrdinalIgnoreCase))
                 {
-                    PackageSources.RemoveAt(i);
-                    return;
+                    return i;
                 }
             }
+            return -1;
         }
     }
 }

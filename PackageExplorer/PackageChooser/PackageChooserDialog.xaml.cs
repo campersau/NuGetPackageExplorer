@@ -1,10 +1,10 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using NuGet.Configuration;
 using NuGetPackageExplorer.Types;
 using NuGetPe;
 using PackageExplorerViewModel;
@@ -140,7 +140,7 @@ namespace PackageExplorer
                 var source = PackageSourceBox.Text;
                 if (!string.IsNullOrEmpty(source))
                 {
-                    _viewModel.ChangePackageSourceCommand.Execute(source);
+                    _viewModel.ChangePackageSourceCommand.Execute(new PackageSource(source.Trim()));
                     e.Handled = true;
                 }
             }
@@ -165,19 +165,17 @@ namespace PackageExplorer
 
         private void PackageSourceBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!IsLoaded || e.AddedItems == null || e.AddedItems.Count == 0)
+            e.Handled = true;
+
+            if (!IsLoaded || e.AddedItems == null || e.AddedItems.Count == 0 || e.RemovedItems == null || e.RemovedItems.Count == 0)
             {
-                e.Handled = true;
                 return;
             }
 
-            var sourceUrl = e.AddedItems[0] as string;
-            if (!string.IsNullOrWhiteSpace(sourceUrl))
+            if (e.AddedItems[0] is PackageSource packageSource)
             {
-                _viewModel.ChangePackageSourceCommand.Execute(sourceUrl);
+                _viewModel.ChangePackageSourceCommand.Execute(packageSource);
             }
-
-            e.Handled = true;
         }
 
         private void ListBoxPackages_ScrollChanged(object sender, ScrollChangedEventArgs e)
